@@ -129,19 +129,25 @@ def _map_status_from_feishu(status: str) -> str:
     """飞书状态 → 系统状态"""
     if not status:
         return ""
-    clean = _strip_emoji(status)
-    mapping = {
-        '待文案': 'pending_copy',
-        '待分配': 'pending',
-        '待反馈': 'pending',
-        '设计中': 'designing',
-        '待内审': 'review',
-        '提交客户': 'client',
-        '客户修改': 'revise',
-        '正稿交付': 'done',
-        '已取消': 'cancelled'
-    }
-    return mapping.get(clean, status)
+    clean = _strip_emoji(status).strip()
+    # 宽松匹配：包含关键词即可
+    if '文案' in clean:
+        return 'pending_copy'
+    if '分配' in clean or '反馈' in clean:
+        return 'pending'
+    if '设计' in clean:
+        return 'designing'
+    if '内审' in clean:
+        return 'review'
+    if '提交' in clean or '客户' in clean:
+        return 'client'
+    if '修改' in clean:
+        return 'revise'
+    if '交付' in clean or '完成' in clean:
+        return 'done'
+    if '取消' in clean:
+        return 'cancelled'
+    return clean
 
 def _map_status_to_feishu(status: str) -> str:
     """系统状态 → 飞书状态"""
@@ -156,14 +162,16 @@ def _map_internal_status(status: str) -> str:
     """飞书内审状态 → 系统内审状态"""
     if not status:
         return ""
-    clean = _strip_emoji(status)
-    mapping = {
-        '内部待审核': 'pending',
-        '内部修改': 'revising',
-        '内部通过': 'approved',
-        '内部免审': 'exempt'
-    }
-    return mapping.get(clean, status)
+    clean = _strip_emoji(status).strip()
+    if '待审核' in clean or '待审' in clean:
+        return 'pending'
+    if '修改' in clean:
+        return 'revising'
+    if '通过' in clean:
+        return 'approved'
+    if '免审' in clean:
+        return 'exempt'
+    return clean
 
 def _map_internal_status_to_feishu(status: str) -> str:
     """系统内审状态 → 飞书内审状态"""
