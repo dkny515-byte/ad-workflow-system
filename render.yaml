@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ad-workflow-system
+    runtime: docker
+    plan: free
+    envVars:
+      - key: FEISHU_APP_ID
+        sync: false
+      - key: FEISHU_APP_SECRET
+        sync: false
+      - key: BASE_ID
+        sync: false
+      - key: ORDERS_TABLE_ID
+        sync: false
+      - key: CUSTOMERS_TABLE_ID
+        sync: false
+      - key: FONTS_TABLE_ID
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
+      - key: DESIGNERS
+        value: '["S","太太","鑫语","蔡蔡","巧巧","祖全","帅哥"]'
+      - key: OTHER_STAFF
+        value: '["Adi","DKNY","Bianca","春春","婉莹","采薇"]'
+      - key: REVIEWERS
+        value: '["Adi","DKNY","春春"]'
+    healthCheckPath: /health

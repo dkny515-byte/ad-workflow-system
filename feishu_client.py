@@ -1,0 +1,113 @@
+import httpx
+import json
+from typing import List, Dict, Any, Optional
+from config import settings
+
+class FeishuClient:
+    def __init__(self):
+        self.app_id = settings.FEISHU_APP_ID
+        self.app_secret = settings.FEISHU_APP_SECRET
+        self.tenant_access_token = None
+        
+        # 环境变量校验
+        if not self.app_id:
+            raise ValueError("FEISHU_APP_ID 环境变量未设置")
+        if not self.app_secret:
+            raise ValueError("FEISHU_APP_SECRET 环境变量未设置")
+        
+    async def _get_tenant_access_token(self) -> str:
+        """获取飞书 tenant_access_token"""
+        if self.tenant_access_token:
+            return self.tenant_access_token
+            
+        if not self.app_id or not self.app_secret:
+            raise ValueError("飞书应用凭证未配置，请检查环境变量 FEISHU_APP_ID 和 FEISHU_APP_SECRET")
+            
+        url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json={
+                "app_id": self.app_id,
+                "app_secret": self.app_secret
+            })
+            data = resp.json()
+            if data.get("code") != 0:
+                error_msg = data.get("msg", "未知错误")
+                raise Exception(f"获取飞书token失败: {error_msg} (code={data.get('code')})")
+            self.tenant_access_token = data["tenant_access_token"]
+            return self.tenant_access_token
+    
+    async def _request(self, method: str, url: str, **kwargs) -> Dict:
+        """发送带认证的请求"""
+        token = await self._get_tenant_access_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        
+        async with httpx.AsyncClient() as client:
+            resp = await client.request(method, url, headers=headers, **kwargs)
+            data = resp.json()
+            if data.get("code") != 0:
+                raise Exception(f"API错误: {data}")
+            return data.get("data", {})
+    
+    # ========== 记录操作 ==========
+    
+    async def list_records(self, table_id: str, filter_str: str = None, page_size: int = 500) -> List[Dict]:
+        """查询记录列表"""
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records"
+        params = {"page_size": page_size}
+        if filter_str:
+            params["filter"] = filter_str
+            
+        data = await self._request("GET", url, params=params)
+        return data.get("items", [])
+    
+    async def get_record(self, table_id: str, record_id: str) -> Dict:
+        """获取单条记录"""
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}"
+        return await self._request("GET", url)
+    
+    async def create_record(self, table_id: str, fields: Dict) -> Dict:
+        """创建记录"""
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records"
+        return await self._request("POST", url, json={"fields": fields})
+    
+    async def update_record(self, table_id: str, record_id: str, fields: Dict) -> Dict:
+        """更新记录"""
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}"
+        return await self._request("PUT", url, json={"fields": fields})
+    
+    async def delete_record(self, table_id: str, record_id: str) -> Dict:
+        """删除记录"""
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}"
+        return await self._request("DELETE", url)
+    
+    # ========== 字段操作 ==========
+    
+    async def list_fields(self, table_id: str) -> List[Dict]:
+        """获取表格字段列表"""
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/fields"
+        data = await self._request("GET", url)
+        return data.get("items", [])
+    
+    # ========== 群机器人通知 ==========
+    
+    async def send_webhook(self, text: str) -> bool:
+        """发送群机器人消息"""
+        if not settings.WEBHOOK_URL:
+            return False
+            
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(settings.WEBHOOK_URL, json={
+                    "msg_type": "text",
+                    "content": {"text": text}
+                })
+                return resp.status_code == 200
+        except Exception as e:
+            print(f"Webhook发送失败: {e}")
+            return False
+
+# 全局客户端实例
+feishu = FeishuClient()

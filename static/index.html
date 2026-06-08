@@ -1,0 +1,2346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>广告工单系统 v4</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: #f5f6f7;
+            color: #1f2329;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        .app-header {
+            background: #fff;
+            border-bottom: 1px solid #e5e6eb;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .app-header h1 {
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .app-header .user {
+            font-size: 13px;
+            color: #646a73;
+        }
+        .nav-tabs {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid #e5e6eb;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .nav-tab {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 13px;
+            color: #646a73;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .nav-tab.active {
+            color: #3370ff;
+            border-bottom-color: #3370ff;
+            font-weight: 500;
+        }
+        .nav-tab:hover {
+            color: #3370ff;
+        }
+        .content {
+            padding: 16px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            color: #1f2329;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-label .required {
+            color: #f54a45;
+            margin-left: 2px;
+        }
+        .form-hint {
+            font-size: 12px;
+            color: #8f959e;
+            margin-top: 4px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dee0e3;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3370ff;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border: 1px solid #dee0e3;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .radio-item:hover {
+            border-color: #3370ff;
+        }
+        .radio-item.selected {
+            border-color: #3370ff;
+            background: #f2f3ff;
+            color: #3370ff;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border: 1px solid #dee0e3;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .checkbox-item.checked {
+            border-color: #3370ff;
+            background: #f2f3ff;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: #3370ff;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #2860e0;
+        }
+        .btn-primary:disabled {
+            background: #a0c0ff;
+            cursor: not-allowed;
+        }
+        .btn-danger {
+            background: #f54a45;
+            color: #fff;
+        }
+        .btn-success {
+            background: #34d399;
+            color: #fff;
+        }
+        .btn-warning {
+            background: #fbbf24;
+            color: #1f2329;
+        }
+        .btn-secondary {
+            background: #f2f3f5;
+            color: #646a73;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .order-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            border-left: 4px solid #3370ff;
+        }
+        .order-card.status-pending { border-left-color: #8f959e; }
+        .order-card.status-designing { border-left-color: #3370ff; }
+        .order-card.status-review { border-left-color: #f59e0b; }
+        .order-card.status-client { border-left-color: #8b5cf6; }
+        .order-card.status-revise { border-left-color: #ec4899; }
+        .order-card.status-done { border-left-color: #34d399; }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .order-name {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .order-meta {
+            font-size: 13px;
+            color: #646a73;
+            line-height: 1.8;
+        }
+        .order-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .tag-p0 { background: #fef2f2; color: #f54a45; }
+        .tag-p1 { background: #fff7ed; color: #f97316; }
+        .tag-p2 { background: #f0f9ff; color: #0ea5e9; }
+        .tag-p3 { background: #f0fdf4; color: #22c55e; }
+        .tag-maybe { background: #f5f3ff; color: #8b5cf6; }
+        .tag-today { background: #fdf2f8; color: #ec4899; }
+        .tag-status {
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-pending { background: #f2f3f5; color: #646a73; }
+        .status-designing { background: #eff4ff; color: #3370ff; }
+        .status-review { background: #fff7ed; color: #f97316; }
+        .status-client { background: #f5f3ff; color: #8b5cf6; }
+        .status-revise { background: #fdf2f8; color: #ec4899; }
+        .status-done { background: #f0fdf4; color: #22c55e; }
+        .empty-state {
+            text-align: center;
+            padding: 48px 16px;
+            color: #8f959e;
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 16px;
+        }
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e6eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 16px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #8f959e;
+        }
+        .modal-body {
+            padding: 16px;
+        }
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e6eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        .hidden { display: none !important; }
+        .section-divider {
+            height: 1px;
+            background: #e5e6eb;
+            margin: 20px 0;
+        }
+        .preview-area {
+            border: 2px dashed #dee0e3;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            color: #8f959e;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .preview-area:hover {
+            border-color: #3370ff;
+        }
+        .toast {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2329;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 300;
+            animation: toastIn 0.3s ease;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .search-input {
+            position: relative;
+        }
+        .search-input input {
+            padding-left: 36px;
+        }
+        .search-input::before {
+            content: "🔍";
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+        .font-search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee0e3;
+            border-radius: 6px;
+            margin-top: 4px;
+            background: #fff;
+        }
+        .font-search-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f2f3f5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .font-search-item:hover {
+            background: #f2f3ff;
+        }
+        .font-selected-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .font-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: #eff4ff;
+            color: #3370ff;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .font-tag .remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* 排班看板 - 拖拽版 */
+        .kanban-board {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            min-height: 500px;
+        }
+        .kanban-column {
+            min-width: 300px;
+            max-width: 340px;
+            flex-shrink: 0;
+            background: #f2f3f5;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        .kanban-column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 8px 12px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 2px solid #e5e6eb;
+            margin-bottom: 8px;
+        }
+        .kanban-column-count {
+            background: #fff;
+            color: #646a73;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        .kanban-cards {
+            min-height: 200px;
+        }
+        .kanban-card {
+            background: #fff;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .kanban-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+        .kanban-card.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+        .kanban-card-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        .kanban-card-meta {
+            font-size: 12px;
+            color: #646a73;
+            line-height: 1.6;
+        }
+        .kanban-card-tags {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .kanban-card-tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .kanban-card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .kanban-column.drag-over {
+            background: #e8f0fe;
+            border: 2px dashed #3370ff;
+        }
+        .kanban-filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .kanban-filter-bar select, .kanban-filter-bar input {
+            width: auto;
+            min-width: 140px;
+        }
+
+        /* 基础数据管理 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: #f2f3f5;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e6eb;
+        }
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f2f3f5;
+        }
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        .data-table input {
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+        .data-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .data-tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            background: #f2f3f5;
+            color: #646a73;
+            transition: all 0.2s;
+        }
+        .data-tab.active {
+            background: #3370ff;
+            color: #fff;
+        }
+
+        /* AE汇总表格 */
+        .ae-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .ae-summary-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: #f2f3f5;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e6eb;
+            white-space: nowrap;
+        }
+        .ae-summary-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f2f3f5;
+            vertical-align: top;
+        }
+        .ae-summary-table tr:hover {
+            background: #f8f9fa;
+        }
+        .ae-summary-table .locked {
+            background: #fafafa;
+            color: #8f959e;
+        }
+        .ae-summary-table .locked input,
+        .ae-summary-table .locked select,
+        .ae-summary-table .locked textarea {
+            background: #f2f3f5;
+            border-color: #e5e6eb;
+            color: #8f959e;
+            pointer-events: none;
+        }
+        .ae-summary-table input.editable,
+        .ae-summary-table select.editable,
+        .ae-summary-table textarea.editable {
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row, .form-row-3 { grid-template-columns: 1fr; }
+            .kanban-column { min-width: 260px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🎯 广告工单系统</h1>
+        <span class="user" id="currentUser">演示模式</span>
+    </div>
+    
+    <div class="nav-tabs" id="navTabs">
+        <div class="nav-tab active" data-tab="create">📝 AE下单</div>
+        <div class="nav-tab" data-tab="copywriter">📝 前策台</div>
+        <div class="nav-tab" data-tab="designer">🎨 设计师</div>
+        <div class="nav-tab" data-tab="review">⭕ 内审</div>
+        <div class="nav-tab" data-tab="feedback">📤 客户反馈</div>
+        <div class="nav-tab" data-tab="kanban">📋 排班看板</div>
+        <div class="nav-tab" data-tab="summary">📊 AE汇总</div>
+        <div class="nav-tab" data-tab="admin">⚙️ 数据管理</div>
+    </div>
+
+    <div class="content" id="content"></div>
+
+    <script>
+        // ==================== 数据层 ====================
+        const STORAGE_KEY = 'ad_workflow_demo_v3';
+        
+        // 人员定义
+        const DESIGNERS = ['S', '太太', '鑫语', '蔡蔡', '巧巧', '祖全', '帅哥'];
+        const OTHER_STAFF = ['Adi', 'DKNY', 'Bianca', '春春', '婉莹', '采薇'];
+        const ALL_STAFF = [...DESIGNERS, ...OTHER_STAFF];
+        const REVIEWERS = ['Adi', 'DKNY', '春春']; // 内审员
+        
+        // 客户部门数据（可管理）
+        let CUSTOMERS_DATA = [
+            { name: '兴业成都分行', depts: ['成都订阅号','成都收单工单','成都财富客户规划','成都财富客群','成都消保','成都代发','成都财富工单','成都安愉+网点运营','成都成都私行','成都法律合规','成都个贷','成都客户经营','成都品牌宣传','成都财富群','成都信用卡中心','成都品牌'] },
+            { name: '兴业宁德分行', depts: ['宁德零售设计','宁德工单','宁德私行','宁德蕉城支行','宁德公众号','宁德办公室'] },
+            { name: '兴业重庆分行', depts: ['重庆信用卡宣传','重庆零售金融','重庆财富宣传','重庆养老金融','重庆私行','重庆零售信贷'] },
+            { name: '四川银行', depts: ['四川银行信用卡','文旅一卡通','蜀农一卡通','八大工程','人才卡','社保卡','家庭分忧卡'] },
+            { name: '兴业总行', depts: ['总行办公室','总行零售'] },
+            { name: '兴业基金', depts: ['兴业基金'] },
+            { name: '兴业龙岩分行', depts: ['龙岩私行'] },
+            { name: '兴业宁波分行', depts: ['宁波私行'] },
+            { name: '兴业厦门分行', depts: ['厦门财富'] },
+            { name: '兴业南昌分行', depts: ['南昌分行'] },
+            { name: '兴业合肥分行', depts: ['合肥私行'] },
+            { name: '兴业广州分行', depts: ['广州分行'] },
+            { name: '兴业莆田分行', depts: ['莆田私行'] },
+            { name: '兴业泉州分行', depts: ['泉州私行'] }
+        ];
+
+        // 字体数据（可管理）
+        let FONTS_DATA = [
+            '汉仪大宋','汉仪中宋','汉仪书宋二','汉仪长美黑','汉仪昌黎宋刻本精修版简',
+            '汉仪大黑','汉仪中黑','汉仪中等线','汉仪典雅体简','汉仪黑方简',
+            '汉仪中楷','汉仪行楷','汉仪楷体','汉仪劲楷简','汉仪魁肃',
+            '汉仪许静行楷简','汉仪颜楷简','汉仪风骨楷体简','汉仪心海行楷简',
+            '汉仪粗圆','汉仪雪君体','汉仪书魂体简','汉仪魏碑','汉仪中隶书',
+            '汉仪程行简','汉仪国强行书简','汉仪老字号简','汉仪颐和仙境简',
+            '汉仪杰龙游子吟简','汉仪魁穆简','汉仪杰龙行云简','汉仪妙草简',
+            '汉仪心海行书简','汉仪北魏写经简','汉仪金陵刻经简','汉仪金陵美宋简',
+            '汉仪大椿手绘宋简','汉仪瑞兽简','汉仪福满堂简','汉仪空山楷简',
+            '汉仪仕杰墨榜简','汉仪瑞鹤简','汉仪碰碰车简','汉仪大白兔简',
+            '汉仪孙尚香简','汉仪破浪体简','汉仪新人文宋65简','汉仪瑞意宋50简',
+            '汉仪瑞意宋80简','汉仪玄宋95简','汉仪雅酷黑-85简','汉仪雅酷黑-65简',
+            '汉仪文黑-75简','汉仪文黑-45简','汉仪元隆黑75简','汉仪风尚黑85简',
+            '汉仪润圆-75简','汉仪铸字木头人简','汉仪铸字乐天派简','汉仪铸字树袋熊简',
+            '汉仪铸字儿童乐园简','汉仪铸字海底世界简','汉仪晓波画报黑简',
+            '汉仪晓波暖宋简','汉仪晓波美妍体简','汉仪晓波手写简','汉仪尚巍朴拙简',
+            '汉仪尚巍沧海简','汉仪唐美人85简','汉仪赤云隶85简','汉仪花冠75简',
+            '汉仪花冠85简','汉仪婉风宋75简','汉仪书仿75简','汉仪书仿95简',
+            '汉仪大风吹可变版','汉仪永字舞狮简','汉仪永字龙虎榜简','汉仪永字小剑客简',
+            '汉仪懒黑黑简','汉仪松阳体简','汉仪小松茸简','汉仪风波龙行简',
+            '汉仪风波便利店简','汉仪菱心体力量版85简','汉仪盈宋45简','汉仪盈宋65简',
+            '汉仪范笑歌喜隶简','汉仪新蒂蜡笔体','汉仪新蒂赵孟頫体','汉仪新蒂牌楼体',
+            '汉仪新蒂佛塔书','汉仪新蒂语文体','汉仪为你写诗体简','汉仪旗黑-105简',
+            '汉仪旗黑-85简','汉仪旗黑-55简','汉仪将军75简','汉仪将军95简',
+            '汉仪粗宋繁','汉仪中宋繁','汉仪报宋繁','汉仪行楷繁','汉仪老字号繁',
+            '汉仪旗黑-105繁','汉仪旗黑-80繁','汉仪旗黑-55繁',
+            '演示新手书','演示镇魂行楷','演示少年行','演示宁缺体','演示汉楷宋',
+            '演示流云楷','波西米亚狂想黑','艾迪鹅演示引擎标题体','演示逍遥黑',
+            '演示踏歌行','演示白菜体','演示古风宋','演示综艺黑','演示芳华细圆',
+            '演示青年黑','演示光华楷','演示光芒体','演示落月楷','演示墩墩黑',
+            '演示诗歌宋','演示多福体','演示写意楷','演示青花楷','演示霸榜',
+            '演示创黑','演示非宋','演示刀刻黑','演示晚风楷','演示秀宋',
+            '演示天真宋','演示真楷','演示鲲榜','演示童真体','演示经集楷',
+            '演示复古基本宋','演示拙黑','演示开门隶','演示祥云','演示心情体',
+            '演示追光隶','演示云顶黑','演示金字招牌','演示文艺宋','演示通义楷',
+            '演示金刚体','演示温暖隶','演示决胜体','演示舍得楷','演示秋鸿楷',
+            '演示悠然小楷','演示夏行楷','演示魁本楷书','演示佛系体','演示春风楷',
+            '思源黑体','思源宋体','阿里巴巴普惠体','OPPO Sans','鸿蒙 HarmonyOS Sans',
+            '站酷高端黑','抖音美好体','优设标题黑'
+        ];
+
+        let orders = [];
+        let currentTab = 'create';
+        let currentRole = 'ae';
+        let currentAE = 'AE小王';
+        let currentUser = 'AE小王';
+
+
+        // API配置
+        const API_BASE = window.location.origin;  // 同域名部署
+        let apiConnected = false;
+        
+        async function apiGet(path) {
+            const resp = await fetch(`${API_BASE}${path}`);
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(`API ${path} 错误: ${resp.status} - ${text}`);
+            }
+            return resp.json();
+        }
+        
+        async function apiPost(path, data) {
+            const resp = await fetch(`${API_BASE}${path}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(`API ${path} 错误: ${resp.status} - ${text}`);
+            }
+            return resp.json();
+        }
+        
+        async function apiPut(path, data) {
+            const resp = await fetch(`${API_BASE}${path}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(`API ${path} 错误: ${resp.status} - ${text}`);
+            }
+            return resp.json();
+        }
+        
+        async function apiDelete(path) {
+            const resp = await fetch(`${API_BASE}${path}`, {method: 'DELETE'});
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(`API ${path} 错误: ${resp.status} - ${text}`);
+            }
+            return resp.json();
+        }
+        
+        function updateConnectionStatus() {
+            const userEl = document.getElementById('currentUser');
+            if (apiConnected) {
+                userEl.innerHTML = '✅ 已连接飞书表格';
+                userEl.style.color = '#34d399';
+            } else {
+                userEl.innerHTML = '⚠️ 演示模式（未连接表格）';
+                userEl.style.color = '#f97316';
+            }
+        }
+
+        async function loadData() {
+            try {
+                // 先测试后端健康状态
+                const health = await apiGet('/health');
+                console.log('后端状态:', health);
+                
+                // 从API加载工单
+                orders = await apiGet('/api/orders/');
+                
+                // 从API加载客户
+                const customersResp = await apiGet('/api/customers/');
+                if (Array.isArray(customersResp) && customersResp.length > 0) {
+                    CUSTOMERS_DATA = customersResp.map(c => ({name: c.name, depts: c.depts}));
+                }
+                
+                // 从API加载字体
+                const fontsResp = await apiGet('/api/fonts/');
+                if (Array.isArray(fontsResp) && fontsResp.length > 0) {
+                    FONTS_DATA = fontsResp.map(f => f.name || f);
+                }
+                
+                // 从API加载人员配置
+                const staffResp = await apiGet('/api/fonts/staff');
+                if (staffResp) {
+                    DESIGNERS.length = 0;
+                    DESIGNERS.push(...(staffResp.designers || DESIGNERS));
+                    OTHER_STAFF.length = 0;
+                    OTHER_STAFF.push(...(staffResp.otherStaff || OTHER_STAFF));
+                    ALL_STAFF.length = 0;
+                    ALL_STAFF.push(...(staffResp.allStaff || ALL_STAFF));
+                    REVIEWERS.length = 0;
+                    REVIEWERS.push(...(staffResp.reviewers || REVIEWERS));
+                }
+                
+                apiConnected = true;
+                updateConnectionStatus();
+                render();
+                showToast('已连接飞书表格');
+            } catch (e) {
+                console.error('加载数据失败:', e);
+                apiConnected = false;
+                updateConnectionStatus();
+                showToast('连接服务器失败: ' + e.message);
+                // 不再自动加载演示数据
+                orders = [];
+                render();
+            }
+        }
+
+        function saveData() {
+            // 数据通过API实时保存到飞书表格，无需本地存储
+            // 保留函数名以兼容现有代码
+        }
+
+        function initDemoData() {
+            orders = [
+                {
+                    id: 'XYCD-20250608-001',
+                    projectName: '端午理财海报',
+                    workType: '原创',
+                    customer: '兴业成都分行',
+                    dept: '成都订阅号',
+                    orderPerson: '张经理',
+                    orderDate: '2025-06-08',
+                    planDate: '2025-06-20',
+                    makeDate: '2025-06-10',
+                    priority: 'P0',
+                    deliverType: '海报',
+                    size: '1080×1920',
+                    quantity: 1,
+                    unit: '个',
+                    desc: '蓝金风格，突出收益率，需符合品牌规范',
+                    driveLink: '',
+                    designer: 'S',
+                    needCopy: false,
+                    copywriter: '',
+                    copyContent: '',
+                    status: 'designing',
+                    internalStatus: '',
+                    version: 1,
+                    createDate: '2025-06-08',
+                    ae: 'AE小王',
+                    fonts: [],
+                    materialSource: [],
+                    materialDesc: '',
+                    portrait: '',
+                    designerSubmitted: false,
+                    actualDate: '',
+                    reviewer: 'Adi',
+
+                },
+                {
+                    id: 'XYCD-20250608-002',
+                    projectName: '信用卡活动长图',
+                    workType: '延展',
+                    customer: '兴业成都分行',
+                    dept: '成都信用卡中心',
+                    orderPerson: '李主管',
+                    orderDate: '2025-06-08',
+                    planDate: '2025-06-15',
+                    makeDate: '',
+                    priority: 'P1',
+                    deliverType: '长图',
+                    size: '1080×5000',
+                    quantity: 1,
+                    unit: '个',
+                    desc: '延续上月活动风格，更新优惠内容',
+                    driveLink: '',
+                    designer: '',
+                    needCopy: true,
+                    copywriter: '春春',
+                    copyContent: '',
+                    status: 'pending_copy',
+                    internalStatus: '',
+                    version: 1,
+                    createDate: '2025-06-08',
+                    ae: 'AE小王',
+                    fonts: [],
+                    materialSource: [],
+                    materialDesc: '',
+                    portrait: '',
+                    designerSubmitted: false,
+                    actualDate: '',
+                    reviewer: 'DKNY',
+
+                },
+                {
+                    id: 'XYND-20250607-001',
+                    projectName: '私行沙龙主KV',
+                    workType: '原创',
+                    customer: '兴业宁德分行',
+                    dept: '宁德私行',
+                    orderPerson: '王行长',
+                    orderDate: '2025-06-07',
+                    planDate: '2025-06-18',
+                    makeDate: '2025-06-09',
+                    priority: 'P0',
+                    deliverType: '主KV',
+                    size: '6000×3000',
+                    quantity: 1,
+                    unit: '件',
+                    desc: '高端大气，金色主调，需体现私行尊贵感',
+                    driveLink: '',
+                    designer: '太太',
+                    needCopy: false,
+                    copywriter: '',
+                    copyContent: '',
+                    status: 'review',
+                    internalStatus: 'pending',
+                    version: 1,
+                    createDate: '2025-06-07',
+                    ae: 'AE小张',
+                    fonts: ['汉仪大宋'],
+                    materialSource: ['原创'],
+                    materialDesc: '原创插画+采购背景',
+                    portrait: '无',
+                    designerSubmitted: true,
+                    actualDate: '',
+                    reviewer: 'Adi',
+
+                },
+                {
+                    id: 'XYCD-20250605-003',
+                    projectName: '品牌海报系列',
+                    workType: '原创',
+                    customer: '兴业成都分行',
+                    dept: '成都品牌',
+                    orderPerson: '赵经理',
+                    orderDate: '2025-06-05',
+                    planDate: '2025-06-12',
+                    makeDate: '2025-06-08',
+                    priority: 'P1',
+                    deliverType: '海报',
+                    size: '1080×1920',
+                    quantity: 3,
+                    unit: '个',
+                    desc: '品牌宣传系列海报，统一视觉风格',
+                    driveLink: '',
+                    designer: '鑫语',
+                    needCopy: false,
+                    copywriter: '',
+                    copyContent: '',
+                    status: 'client',
+                    internalStatus: 'approved',
+                    version: 1,
+                    createDate: '2025-06-05',
+                    ae: 'AE小王',
+                    fonts: ['汉仪大黑'],
+                    materialSource: ['原创', '正版素材库'],
+                    materialDesc: '原创设计+采购背景图',
+                    portrait: '无',
+                    designerSubmitted: true,
+                    actualDate: '',
+                    reviewer: 'DKNY',
+
+                },
+                {
+                    id: 'XYND-20250606-004',
+                    projectName: '消保宣传长图',
+                    workType: '延展',
+                    customer: '兴业宁德分行',
+                    dept: '宁德公众号',
+                    orderPerson: '陈主任',
+                    orderDate: '2025-06-06',
+                    planDate: '2025-06-14',
+                    makeDate: '2025-06-09',
+                    priority: 'P2',
+                    deliverType: '长图',
+                    size: '1080×8000',
+                    quantity: 1,
+                    unit: '个',
+                    desc: '消保知识宣传，图文结合',
+                    driveLink: '',
+                    designer: '蔡蔡',
+                    needCopy: true,
+                    copywriter: '婉莹',
+                    copyContent: '已提交文案初稿，请设计师参考',
+                    status: 'revise',
+                    internalStatus: 'approved',
+                    version: 2,
+                    createDate: '2025-06-06',
+                    ae: 'AE小张',
+                    fonts: ['汉仪中宋'],
+                    materialSource: ['客户提供'],
+                    materialDesc: '客户提供文案和参考图',
+                    portrait: '有-已获得肖像授权',
+                    designerSubmitted: true,
+                    actualDate: '',
+                    reviewer: '春春',
+
+                }
+            ];
+            saveData();
+        }
+
+        function generateId(customer, projectName) {
+            const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const short = customer.slice(0, 4);
+            const seq = String(orders.length + 1).padStart(3, '0');
+            return `${short}-${date}-${seq}`;
+        }
+
+        function showToast(msg) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        // ==================== 界面渲染 ====================
+        function render() {
+            const content = document.getElementById('content');
+            content.innerHTML = '';
+            
+            switch(currentTab) {
+                case 'create': renderCreate(content); break;
+                case 'copywriter': renderCopywriter(content); break;
+                case 'designer': renderDesigner(content); break;
+                case 'review': renderReview(content); break;
+                case 'feedback': renderFeedback(content); break;
+                case 'kanban': renderKanban(content); break;
+                case 'summary': renderSummary(content); break;
+                case 'admin': renderAdmin(content); break;
+            }
+        }
+
+        // AE下单页
+        function renderCreate(container) {
+            const today = new Date().toISOString().slice(0, 10);
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-title">📝 新建工单</div>
+                    <form id="createForm">
+                        <div class="form-group">
+                            <label class="form-label">工作性质 <span class="required">*</span></label>
+                            <div class="radio-group" id="workTypeGroup">
+                                <div class="radio-item selected" data-value="原创">原创</div>
+                                <div class="radio-item" data-value="延展">延展</div>
+                                <div class="radio-item" data-value="修改">修改</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">项目简述 <span class="required">*</span></label>
+                            <input type="text" id="projectName" placeholder="如：端午理财海报" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">客户 <span class="required">*</span></label>
+                                <select id="customer" required>
+                                    <option value="">选择客户</option>
+                                    ${CUSTOMERS_DATA.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">部门</label>
+                                <select id="dept">
+                                    <option value="">先选择客户</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">下单人</label>
+                            <input type="text" id="orderPerson" placeholder="客户侧具体联系人">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">下单日期 <span class="required">*</span></label>
+                                <input type="date" id="orderDate" value="${today}" required>
+                                <div class="form-hint">默认为今天，支持补录历史工单</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">计划交付日期 <span class="required">*</span></label>
+                                <input type="date" id="planDate" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">制作日期</label>
+                                <input type="date" id="makeDate">
+                                <div class="form-hint">用于排班看板，不填则待分配</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">优先级</label>
+                                <div class="radio-group" id="priorityGroup">
+                                    <div class="radio-item selected" data-value="P0">P0</div>
+                                    <div class="radio-item" data-value="P1">P1</div>
+                                    <div class="radio-item" data-value="P2">P2</div>
+                                    <div class="radio-item" data-value="P3">P3</div>
+                                    <div class="radio-item" data-value="可能来">可能来</div>
+                                    <div class="radio-item" data-value="当天新增">当天新增</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">交付物类型</label>
+                            <input type="text" id="deliverType" placeholder="海报、易拉宝、长图、banner、主KV等">
+                            <div class="form-hint">填写具体类型，如：海报</div>
+                        </div>
+                        
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">规格尺寸</label>
+                                <input type="text" id="size" placeholder="1080×1920">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">数量</label>
+                                <input type="number" id="quantity" value="1" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">单位</label>
+                                <input type="text" id="unit" placeholder="个、件、项、页" value="个">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">说明</label>
+                            <textarea id="desc" placeholder="详细设计要求，如风格、色调、重点内容等"></textarea>
+                        </div>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">需要前策/文案</label>
+                                <div class="radio-group" id="needCopyGroup">
+                                    <div class="radio-item selected" data-value="false">否</div>
+                                    <div class="radio-item" data-value="true">是</div>
+                                </div>
+                            </div>
+                            <div class="form-group" id="copywriterGroup" style="display:none">
+                                <label class="form-label">前策/文案人员</label>
+                                <select id="copywriter">
+                                    <option value="">选择人员</option>
+                                    ${OTHER_STAFF.map(d => `<option value="${d}">${d}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">分配设计师</label>
+                            <select id="designer">
+                                <option value="">待分配</option>
+                                ${DESIGNERS.map(d => `<option value="${d}">${d}</option>`).join('')}
+                            </select>
+                            <div class="form-hint">不填则进入排班看板待分配</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">指定内审员</label>
+                            <select id="reviewer">
+                                <option value="">自动分配</option>
+                                ${REVIEWERS.map(r => `<option value="${r}">${r}</option>`).join('')}
+                            </select>
+                        </div>
+                        
+                
+                        
+                        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px">提交工单</button>
+                        
+                        <div class="form-hint" style="margin-top:12px;text-align:center">
+                            提交后自动生成：项目编号、看板名称、看板备注、版本号(v1)
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.getElementById('customer').addEventListener('change', function() {
+                const customer = CUSTOMERS_DATA.find(c => c.name === this.value);
+                const deptSelect = document.getElementById('dept');
+                if (customer) {
+                    deptSelect.innerHTML = customer.depts.map(d => `<option value="${d}">${d}</option>`).join('');
+                } else {
+                    deptSelect.innerHTML = '<option value="">先选择客户</option>';
+                }
+            });
+            
+            document.querySelectorAll('.radio-group').forEach(group => {
+                group.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('radio-item')) {
+                        this.querySelectorAll('.radio-item').forEach(item => item.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        if (this.id === 'needCopyGroup') {
+                            const show = e.target.dataset.value === 'true';
+                            document.getElementById('copywriterGroup').style.display = show ? 'block' : 'none';
+                        }
+                    }
+                });
+            });
+            
+            document.getElementById('createForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const customer = document.getElementById('customer').value;
+                const projectName = document.getElementById('projectName').value;
+                
+                if (!customer || !projectName || !document.getElementById('planDate').value) {
+                    showToast('请填写必填项');
+                    return;
+                }
+                
+                const workType = document.querySelector('#workTypeGroup .selected').dataset.value;
+                const priority = document.querySelector('#priorityGroup .selected').dataset.value;
+                const needCopy = document.querySelector('#needCopyGroup .selected').dataset.value === 'true';
+                const designer = document.getElementById('designer').value;
+                
+                const order = {
+                    id: generateId(customer, projectName),
+                    projectName: projectName,
+                    workType: workType,
+                    customer: customer,
+                    dept: document.getElementById('dept').value,
+                    orderPerson: document.getElementById('orderPerson').value,
+                    orderDate: document.getElementById('orderDate').value,
+                    planDate: document.getElementById('planDate').value,
+                    makeDate: document.getElementById('makeDate').value,
+                    priority: priority,
+                    deliverType: document.getElementById('deliverType').value,
+                    size: document.getElementById('size').value,
+                    quantity: parseInt(document.getElementById('quantity').value) || 1,
+                    unit: document.getElementById('unit').value,
+                    desc: document.getElementById('desc').value,
+                    driveLink: '',
+                    designer: designer,
+                    needCopy: needCopy,
+                    copywriter: needCopy ? document.getElementById('copywriter').value : '',
+                    copyContent: '',
+                    status: needCopy ? 'pending_copy' : (designer ? 'designing' : 'pending'),
+                    internalStatus: '',
+                    version: 1,
+                    createDate: new Date().toISOString().slice(0, 10),
+                    ae: currentAE,
+                    fonts: [],
+                    materialSource: [],
+                    materialDesc: '',
+                    portrait: '',
+                    designerSubmitted: false,
+                    actualDate: '',
+                    reviewer: document.getElementById('reviewer').value || REVIEWERS[0],
+
+                };
+                
+                orders.push(order);
+                saveData();
+                showToast('工单创建成功！');
+                this.reset();
+                document.querySelectorAll('.radio-group .radio-item:first-child').forEach(item => item.classList.add('selected'));
+                document.getElementById('orderDate').value = today;
+            });
+        }
+
+        // 前策工作台
+        function renderCopywriter(container) {
+            const copyOrders = orders.filter(o => o.status === 'pending_copy'); // 演示模式：显示所有待文案工单
+            
+            if (copyOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📝</div>
+                        <div>暂无待处理的文案工单</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div style="margin-bottom:12px;font-size:13px;color:#646a73">
+                    待处理文案: ${copyOrders.length}件
+                </div>
+                ${copyOrders.map(order => `
+                    <div class="order-card status-pending">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-name">【${order.workType}】${order.projectName}</div>
+                                <div style="margin-top:4px">
+                                    <span class="tag tag-p0">${order.priority}</span>
+                                    <span class="tag-status status-pending">待文案</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="order-meta">
+                            <div>客户：${order.customer} · ${order.dept}</div>
+                            <div>AE：${order.ae}</div>
+                            <div>说明：${order.desc || '无'}</div>
+                        </div>
+                        <div class="form-group" style="margin-top:12px">
+                            <label class="form-label">文案内容</label>
+                            <textarea id="copyContent_${order.id}" rows="4" placeholder="输入文案内容...">${order.copyContent || ''}</textarea>
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-primary btn-sm" onclick="submitCopy('${order.id}')">提交文案，进入设计</button>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        // 设计师工作台
+        function renderDesigner(container) {
+            const myOrders = orders.filter(o => o.status !== 'done' && o.status !== 'cancelled' && o.status !== 'pending_copy');
+            
+            if (myOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🎨</div>
+                        <div>暂无进行中的工单</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div style="margin-bottom:12px;font-size:13px;color:#646a73">
+                    进行中: ${myOrders.length}件
+                </div>
+                ${myOrders.map(order => {
+                    const statusLabels = {
+                        'pending': '待分配',
+                        'designing': '设计中',
+                        'review': '待内审',
+                        'client': '提交客户',
+                        'revise': '客户修改'
+                    };
+                    const statusClasses = {
+                        'pending': 'status-pending',
+                        'designing': 'status-designing',
+                        'review': 'status-review',
+                        'client': 'status-client',
+                        'revise': 'status-revise'
+                    };
+                    const priorityTags = {
+                        'P0': 'tag-p0', 'P1': 'tag-p1', 'P2': 'tag-p2', 'P3': 'tag-p3',
+                        '可能来': 'tag-maybe', '当天新增': 'tag-today'
+                    };
+                    
+                    let actionBtn = '';
+                    if (order.status === 'designing') {
+                        actionBtn = `<button class="btn btn-primary btn-sm" onclick="submitReview('${order.id}')">提交内审</button>`;
+                    } else if (order.status === 'revise') {
+                        actionBtn = `<button class="btn btn-primary btn-sm" onclick="submitReview('${order.id}')">修改完成，提交客户</button>`;
+                    } else if (order.status === 'review') {
+                        actionBtn = `<span style="color:#f97316;font-size:13px">⏳ 等待内审</span>`;
+                    } else if (order.status === 'client') {
+                        actionBtn = `<span style="color:#8b5cf6;font-size:13px">⏳ 等待客户反馈</span>`;
+                    } else if (order.status === 'pending') {
+                        actionBtn = `<span style="color:#8f959e;font-size:13px">⏳ 等待分配</span>`;
+                    }
+                    
+                    return `
+                        <div class="order-card status-${order.status}">
+                            <div class="order-header">
+                                <div>
+                                    <div class="order-name">【${order.workType}】${order.projectName}</div>
+                                    <div style="margin-top:4px">
+                                        <span class="tag ${priorityTags[order.priority] || 'tag-p2'}">${order.priority}</span>
+                                        <span class="tag-status ${statusClasses[order.status]}">${statusLabels[order.status]}</span>
+                                        ${order.version > 1 ? `<span style="font-size:12px;color:#ec4899;margin-left:6px">v${order.version}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="order-meta">
+                                <div>客户：${order.customer} · ${order.dept}</div>
+    
+                                <div>交付物：${order.deliverType} ${order.size} ${order.quantity}${order.unit}</div>
+                                <div>说明：${order.desc || '无'}</div>
+                                ${order.copyContent ? `<div style="background:#f2f3ff;padding:8px;border-radius:4px;margin-top:4px">📄 文案：${order.copyContent}</div>` : ''}
+                                ${order.makeDate ? `<div>制作日期：${order.makeDate}</div>` : ''}
+                            </div>
+                            <div class="order-actions">
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        }
+
+        // 内审台
+        function renderReview(container) {
+            const reviewOrders = orders.filter(o => o.status === 'review');
+            
+            if (reviewOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">⭕</div>
+                        <div>暂无待内审工单</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div style="margin-bottom:12px;font-size:13px;color:#646a73">
+                    待审核: ${reviewOrders.length}件
+                </div>
+                ${reviewOrders.map(order => `
+                    <div class="order-card status-review">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-name">【${order.workType}】${order.projectName} v${order.version}</div>
+                                <div style="margin-top:4px">
+                                    <span class="tag tag-p0">${order.priority}</span>
+                                    <span class="tag-status status-review">待内审</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="order-meta">
+                            <div>设计师：${order.designer}</div>
+                            <div>AE：${order.ae}</div>
+                            <div>指定内审员：${order.reviewer || '未指定'}</div>
+                            <div>客户：${order.customer} · ${order.dept}</div>
+                            <div>说明：${order.desc || '无'}</div>
+                            ${order.copyContent ? `<div>文案：${order.copyContent}</div>` : ''}
+                            ${order.fonts.length ? `<div>字体：${order.fonts.join('、')}</div>` : ''}
+                            ${order.materialSource.length ? `<div>素材：${order.materialSource.join('、')}</div>` : ''}
+                            ${order.materialDesc ? `<div>素材说明：${order.materialDesc}</div>` : ''}
+                            ${order.portrait ? `<div>肖像权：${order.portrait}</div>` : ''}
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-success btn-sm" onclick="passReview('${order.id}')">通过并提交客户</button>
+                            <button class="btn btn-secondary btn-sm" onclick="exemptReview('${order.id}')">免审提交客户</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectReview('${order.id}')">需修改</button>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        // 客户反馈
+        function renderFeedback(container) {
+            const feedbackOrders = orders.filter(o => o.status === 'client' || o.status === 'revise');
+            
+            if (feedbackOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📤</div>
+                        <div>暂无待客户反馈工单</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div style="margin-bottom:12px;font-size:13px;color:#646a73">
+                    待反馈: ${feedbackOrders.length}件
+                </div>
+                ${feedbackOrders.map(order => {
+                    const isClient = order.status === 'client';
+                    return `
+                        <div class="order-card status-${order.status}">
+                            <div class="order-header">
+                                <div>
+                                    <div class="order-name">【${order.workType}】${order.projectName} v${order.version}</div>
+                                    <div style="margin-top:4px">
+                                        <span class="tag tag-p0">${order.priority}</span>
+                                        <span class="tag-status ${isClient ? 'status-client' : 'status-revise'}">${isClient ? '提交客户' : '客户修改中'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="order-meta">
+                                <div>AE：${order.ae}</div>
+                                <div>设计师：${order.designer}</div>
+                                <div>客户：${order.customer} · ${order.dept}</div>
+                                <div>内审：${order.internalStatus === 'approved' ? '内部通过' : '内部免审'}</div>
+    
+                            </div>
+                            ${isClient ? `
+                                <div class="order-actions">
+                                    <button class="btn btn-success btn-sm" onclick="clientConfirm('${order.id}')">客户确认通过</button>
+                                    <button class="btn btn-warning btn-sm" onclick="clientRevise('${order.id}')">客户要求修改</button>
+                                </div>
+                            ` : `
+                                <div class="order-actions">
+                                    <span style="color:#ec4899;font-size:13px">⏳ 等待设计师修改完成</span>
+                                    <button class="btn btn-secondary btn-sm" onclick="changeDesigner('${order.id}')">更换设计师</button>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        }
+
+        // 排班看板
+        function renderKanban(container) {
+            const filterDate = new Date().toISOString().slice(0, 10);
+            
+            // 所有人员作为列
+            const allPeople = ['待分配', ...ALL_STAFF];
+            
+            // 按人员分组
+            const peopleGroups = {};
+            allPeople.forEach(p => peopleGroups[p] = []);
+            
+            orders.filter(o => o.status !== 'done' && o.status !== 'cancelled').forEach(order => {
+                const person = order.designer || '待分配';
+                if (!peopleGroups[person]) peopleGroups[person] = [];
+                peopleGroups[person].push(order);
+            });
+            
+            const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3, '可能来': 4, '当天新增': 5 };
+            
+            container.innerHTML = `
+                <div class="kanban-filter-bar">
+                    <select id="kanbanFilterDate">
+                        <option value="">全部日期</option>
+                        <option value="${filterDate}" selected>今天 (${filterDate})</option>
+                    </select>
+                    <select id="kanbanFilterPriority">
+                        <option value="">全部优先级</option>
+                        <option value="P0">P0</option>
+                        <option value="P1">P1</option>
+                        <option value="P2">P2</option>
+                    </select>
+                    <input type="text" id="kanbanSearch" placeholder="搜索项目..." style="min-width:200px">
+                    <button class="btn btn-primary btn-sm" onclick="showKanbanEditHelp()">💡 操作提示</button>
+                </div>
+                <div class="kanban-board" id="kanbanBoard">
+                    ${allPeople.map(person => {
+                        let personOrders = peopleGroups[person] || [];
+                        
+                        // 排序
+                        personOrders.sort((a, b) => {
+                            const pa = priorityOrder[a.priority] ?? 99;
+                            const pb = priorityOrder[b.priority] ?? 99;
+                            if (pa !== pb) return pa - pb;
+                            return (a.planDate || '').localeCompare(b.planDate || '');
+                        });
+                        
+                        const isDesigner = DESIGNERS.includes(person);
+                        const isOther = OTHER_STAFF.includes(person);
+                        const headerColor = person === '待分配' ? '#8f959e' : (isDesigner ? '#3370ff' : '#f59e0b');
+                        
+                        return `
+                            <div class="kanban-column" data-person="${person}" ondragover="allowDrop(event)" ondrop="dropCard(event, '${person}')">
+                                <div class="kanban-column-header" style="color:${headerColor}">
+                                    <span>${person} ${isDesigner ? '(设计)' : isOther ? '(策划/AE)' : ''}</span>
+                                    <span class="kanban-column-count">${personOrders.length}</span>
+                                </div>
+                                <div class="kanban-cards">
+                                    ${personOrders.map(order => {
+                                        const priorityColors = {
+                                            'P0': '#f54a45', 'P1': '#f97316', 'P2': '#0ea5e9',
+                                            'P3': '#22c55e', '可能来': '#8b5cf6', '当天新增': '#ec4899'
+                                        };
+                                        const statusLabels = {
+                                            'pending_copy': '待文案', 'pending': '待分配', 'designing': '设计中',
+                                            'review': '待内审', 'client': '提交客户', 'revise': '客户修改'
+                                        };
+                                        return `
+                                            <div class="kanban-card" draggable="true" data-id="${order.id}" ondragstart="dragStart(event, '${order.id}')">
+                                                <div class="kanban-card-title">【${order.workType}】${order.projectName}</div>
+                                                <div class="kanban-card-meta">
+                                                    <div>${order.customer} · ${order.dept}</div>
+                                                    <div>交付物：${order.deliverType || '-'} ${order.size || ''} ${order.quantity || ''}${order.unit || ''}</div>
+                                                    <div style="margin-top:4px;color:#1f2329">${order.desc || '无说明'}</div>
+                                                    ${order.makeDate ? `<div>制作：${order.makeDate}</div>` : ''}
+                                                </div>
+                                                <div class="kanban-card-tags">
+                                                    <span class="kanban-card-tag" style="background:${priorityColors[order.priority] || '#8f959e'}15;color:${priorityColors[order.priority] || '#8f959e'}">${order.priority}</span>
+                                                    <span class="kanban-card-tag" style="background:#f2f3f5;color:#646a73">${statusLabels[order.status] || order.status}</span>
+                                                    ${order.version > 1 ? `<span class="kanban-card-tag" style="background:#fdf2f8;color:#ec4899">v${order.version}</span>` : ''}
+                                                </div>
+                                                <div class="kanban-card-actions">
+                                                    <button class="btn btn-secondary btn-sm" onclick="editKanbanOrder('${order.id}')" style="flex:1">编辑</button>
+                                                    ${person === '待分配' ? `<button class="btn btn-primary btn-sm" onclick="assignFromKanban('${order.id}')" style="flex:1">分配</button>` : ''}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                    ${personOrders.length === 0 ? '<div style="text-align:center;padding:24px;color:#8f959e;font-size:13px">暂无工单</div>' : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // AE汇总
+        function renderSummary(container) {
+            const customers = [...new Set(orders.map(o => o.customer))];
+            
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-title">📊 AE项目汇总</div>
+                    <div class="form-row" style="margin-bottom:16px">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">选择客户</label>
+                            <select id="summaryCustomer">
+                                <option value="">全部客户</option>
+                                ${customers.map(c => `<option value="${c}">${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;display:flex;align-items:flex-end;gap:8px">
+                            <button class="btn btn-primary" onclick="exportSummary()">📥 导出Excel</button>
+                            <button class="btn btn-secondary" onclick="showSummaryHelp()">💡 编辑说明</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px">
+                        <button class="btn btn-secondary btn-sm" onclick="toggleColumnSelector()">🔧 显示/隐藏列</button>
+                        <div id="columnSelector" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:6px">
+                            <div style="font-weight:600;margin-bottom:8px">选择要显示的列：</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:12px">
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="id" checked> 项目编号</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="projectName" checked> 项目简述</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="customer" checked> 客户</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="dept" checked> 部门</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="workType" checked> 工作性质</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="deliverType"> 交付物</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="size"> 规格尺寸</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="quantity"> 数量</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="unit"> 单位</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="orderDate" checked> 下单日期</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="planDate" checked> 计划交付</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="makeDate"> 制作日期</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="designer" checked> 设计师</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="ae"> AE</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="status" checked> 状态</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="version"> 版本</label>
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" class="col-toggle" value="driveLink" checked> 交付物链接</label>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="applyColumnToggle()" style="margin-top:12px">应用</button>
+                        </div>
+                    </div>
+                    <div id="summaryTableContainer">
+                        ${renderSummaryTable('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('summaryCustomer').addEventListener('change', function() {
+                document.getElementById('summaryTableContainer').innerHTML = renderSummaryTable(this.value);
+            });
+        }
+
+        // 默认显示的列
+        const DEFAULT_VISIBLE_COLS = ['id', 'projectName', 'customer', 'dept', 'workType', 'orderDate', 'planDate', 'designer', 'status', 'driveLink'];
+        let visibleCols = [...DEFAULT_VISIBLE_COLS];
+
+        function renderSummaryTable(customerFilter) {
+            const filtered = customerFilter ? orders.filter(o => o.customer === customerFilter) : orders;
+            
+            if (filtered.length === 0) {
+                return '<div class="empty-state"><div class="icon">📋</div><div>暂无工单</div></div>';
+            }
+            
+            const statusLabels = {
+                'pending_copy': '待文案', 'pending': '待分配', 'designing': '设计中',
+                'review': '待内审', 'client': '提交客户', 'revise': '客户修改',
+                'done': '正稿交付', 'cancelled': '已取消'
+            };
+            
+            const colDefs = {
+                id: { title: '项目编号', locked: true, render: o => o.id },
+                projectName: { title: '项目简述', locked: true, render: o => o.projectName },
+                customer: { title: '客户', locked: true, render: o => o.customer },
+                dept: { title: '部门', locked: true, render: o => o.dept },
+                workType: { title: '工作性质', locked: true, render: o => o.workType },
+                deliverType: { title: '交付物', locked: true, render: o => `${o.deliverType} ${o.size} ${o.quantity}${o.unit}` },
+                size: { title: '规格尺寸', locked: true, render: o => o.size },
+                quantity: { title: '数量', locked: true, render: o => o.quantity },
+                unit: { title: '单位', locked: true, render: o => o.unit },
+                orderDate: { title: '下单日期', locked: true, render: o => o.orderDate },
+                planDate: { title: '计划交付', locked: true, render: o => o.planDate },
+                makeDate: { title: '制作日期', locked: true, render: o => o.makeDate || '' },
+                designer: { title: '设计师', locked: true, render: o => o.designer || '待分配' },
+                ae: { title: 'AE', locked: true, render: o => o.ae },
+                status: { title: '状态', locked: true, render: o => statusLabels[o.status] || o.status },
+                version: { title: '版本', locked: true, render: o => 'v' + o.version },
+                driveLink: { title: '交付物链接<br><span style="font-size:11px;color:#8f959e">(AE可编辑)</span>', locked: false, render: o => `<input type="text" class="editable" value="${o.driveLink}" onchange="updateDriveLink('${o.id}', this.value)" placeholder="正稿交付后填写网盘链接">` }
+            };
+            
+            const visibleColDefs = visibleCols.filter(k => colDefs[k]).map(k => colDefs[k]);
+            
+            return `
+                <div style="overflow-x:auto">
+                    <table class="ae-summary-table" id="exportTable">
+                        <thead>
+                            <tr>
+                                ${visibleColDefs.map(c => `<th>${c.title}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filtered.map(order => `
+                                <tr data-id="${order.id}">
+                                    ${visibleColDefs.map(c => `<td class="${c.locked ? 'locked' : ''}">${c.render(order)}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:12px;font-size:13px;color:#646a73">
+                    共 ${filtered.length} 条记录 · 灰色背景列为系统锁定，不可修改 · 白色列支持AE编辑
+                </div>
+            `;
+        }
+
+        // 基础数据管理
+        function renderAdmin(container) {
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-title">⚙️ 基础数据管理</div>
+                    <div class="data-tabs">
+                        <div class="data-tab active" onclick="switchAdminTab('customers')">客户部门</div>
+                        <div class="data-tab" onclick="switchAdminTab('fonts')">字体白名单</div>
+                        <div class="data-tab" onclick="switchAdminTab('staff')">人员管理</div>
+                    </div>
+                    <div id="adminContent"></div>
+                </div>
+            `;
+            renderAdminCustomers();
+        }
+
+        function renderAdminCustomers() {
+            const content = document.getElementById('adminContent');
+            content.innerHTML = `
+                <div style="margin-bottom:12px">
+                    <button class="btn btn-primary btn-sm" onclick="addCustomer()">+ 新增客户</button>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>客户名称</th>
+                            <th>下属部门</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${CUSTOMERS_DATA.map((c, idx) => `
+                            <tr>
+                                <td><input type="text" value="${c.name}" onchange="updateCustomer(${idx}, 'name', this.value)" style="width:100%"></td>
+                                <td>
+                                    <textarea onchange="updateCustomer(${idx}, 'depts', this.value)" rows="2" style="width:100%;min-height:60px">${c.depts.join('、')}</textarea>
+                                    <div class="form-hint">用"、"分隔多个部门</div>
+                                </td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${idx})">删除</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderAdminFonts() {
+            const content = document.getElementById('adminContent');
+            content.innerHTML = `
+                <div style="margin-bottom:12px">
+                    <button class="btn btn-primary btn-sm" onclick="addFont()">+ 新增字体</button>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>字体名称</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${FONTS_DATA.map((f, idx) => `
+                            <tr>
+                                <td><input type="text" value="${f}" onchange="updateFont(${idx}, this.value)" style="width:100%"></td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteFont(${idx})">删除</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderAdminStaff() {
+            const content = document.getElementById('adminContent');
+            content.innerHTML = `
+                <div class="card" style="margin-bottom:12px">
+                    <div style="font-weight:600;margin-bottom:8px">设计团队</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px">
+                        ${DESIGNERS.map(d => `<span class="font-tag">${d}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="card" style="margin-bottom:12px">
+                    <div style="font-weight:600;margin-bottom:8px">策划/AE/其他</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px">
+                        ${OTHER_STAFF.map(s => `<span class="font-tag">${s}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="card">
+                    <div style="font-weight:600;margin-bottom:8px">内审员</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px">
+                        ${REVIEWERS.map(r => `<span class="font-tag" style="background:#fff7ed;color:#f97316">${r}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="form-hint" style="margin-top:12px">
+                    人员管理需联系系统管理员修改代码配置。当前为演示模式，正式环境支持动态管理。
+                </div>
+            `;
+        }
+
+        // ==================== 操作函数 ====================
+        window.submitCopy = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            const content = document.getElementById(`copyContent_${orderId}`)?.value || '';
+            if (!content.trim()) {
+                showToast('请先填写文案内容');
+                return;
+            }
+            order.copyContent = content;
+            order.status = designer ? 'designing' : 'pending';
+            saveData();
+            showToast('文案已提交，进入设计流程');
+            render();
+        };
+
+        window.submitReview = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>提交内审：${order.projectName}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label">上传设计稿预览</label>
+                            <div class="preview-area" onclick="showToast('演示模式：实际环境支持文件上传')">
+                                <div style="font-size:24px;margin-bottom:8px">📎</div>
+                                <div>点击或拖拽上传设计稿</div>
+                                <div style="font-size:12px;color:#8f959e;margin-top:4px">支持 JPG, PNG, PDF</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">使用字体（支持搜索）</label>
+                            <div class="search-input">
+                                <input type="text" id="fontSearch" placeholder="输入字体名称搜索..." autocomplete="off">
+                            </div>
+                            <div class="font-search-results" id="fontSearchResults" style="display:none"></div>
+                            <div class="font-selected-tags" id="fontSelectedTags"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">素材来源（多选）</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item"><input type="checkbox" value="原创" class="material-checkbox"> 原创</label>
+                                <label class="checkbox-item"><input type="checkbox" value="正版素材库" class="material-checkbox"> 正版素材库</label>
+                                <label class="checkbox-item"><input type="checkbox" value="客户提供" class="material-checkbox"> 客户提供</label>
+                                <label class="checkbox-item"><input type="checkbox" value="AI生成" class="material-checkbox"> AI生成</label>
+                                <label class="checkbox-item"><input type="checkbox" value="免费商用" class="material-checkbox"> 免费商用</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">素材说明</label>
+                            <textarea id="materialDesc" placeholder="如：原创插画+采购背景"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">肖像权</label>
+                            <div class="radio-group" id="portraitGroup">
+                                <div class="radio-item selected" data-value="无">无</div>
+                                <div class="radio-item" data-value="有-待确认">有-待确认</div>
+                                <div class="radio-item" data-value="有-已获得肖像授权">有-已获得肖像授权</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                        <button class="btn btn-primary" id="confirmSubmit">确认提交</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            let selectedFonts = [];
+            const fontSearchInput = modal.querySelector('#fontSearch');
+            const fontResults = modal.querySelector('#fontSearchResults');
+            const fontTags = modal.querySelector('#fontSelectedTags');
+            
+            function updateFontTags() {
+                fontTags.innerHTML = selectedFonts.map(f => `
+                    <span class="font-tag">${f} <span class="remove" onclick="removeFont('${f}')">×</span></span>
+                `).join('');
+            }
+            
+            window.removeFont = function(font) {
+                selectedFonts = selectedFonts.filter(f => f !== font);
+                updateFontTags();
+            };
+            
+            fontSearchInput.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase();
+                if (!query) {
+                    fontResults.style.display = 'none';
+                    return;
+                }
+                const matches = FONTS_DATA.filter(f => f.toLowerCase().includes(query) && !selectedFonts.includes(f)).slice(0, 10);
+                if (matches.length) {
+                    fontResults.innerHTML = matches.map(f => `
+                        <div class="font-search-item" data-font="${f}">
+                            <span>${f}</span>
+                            <span style="font-size:12px;color:#3370ff">+ 添加</span>
+                        </div>
+                    `).join('');
+                    fontResults.style.display = 'block';
+                    
+                    fontResults.querySelectorAll('.font-search-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            const font = this.dataset.font;
+                            if (!selectedFonts.includes(font)) {
+                                selectedFonts.push(font);
+                                updateFontTags();
+                            }
+                            fontSearchInput.value = '';
+                            fontResults.style.display = 'none';
+                        });
+                    });
+                } else {
+                    fontResults.innerHTML = '<div style="padding:12px;color:#8f959e">无匹配字体</div>';
+                    fontResults.style.display = 'block';
+                }
+            });
+            
+            modal.querySelectorAll('#portraitGroup .radio-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    modal.querySelectorAll('#portraitGroup .radio-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            modal.querySelector('#confirmSubmit').addEventListener('click', function() {
+                const materials = Array.from(modal.querySelectorAll('.material-checkbox:checked')).map(cb => cb.value);
+                const portrait = modal.querySelector('#portraitGroup .selected').dataset.value;
+                
+                order.status = 'review';
+                order.internalStatus = 'pending';
+                order.fonts = selectedFonts;
+                order.materialSource = materials;
+                order.materialDesc = modal.querySelector('#materialDesc').value;
+                order.portrait = portrait;
+                order.designerSubmitted = true;
+                
+                saveData();
+                modal.remove();
+                showToast('已提交内审，等待审核');
+                render();
+            });
+        };
+
+        window.passReview = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            order.status = 'client';
+            order.internalStatus = 'approved';
+            saveData();
+            showToast(`内审通过，已通知AE ${order.ae} 提交客户`);
+            render();
+        };
+
+        window.exemptReview = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            order.status = 'client';
+            order.internalStatus = 'exempt';
+            saveData();
+            showToast(`免审通过，已通知AE ${order.ae} 提交客户`);
+            render();
+        };
+
+        window.rejectReview = function(orderId) {
+            const comment = prompt('请输入修改意见：');
+            if (!comment) return;
+            
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            order.status = 'designing';
+            order.internalStatus = 'revising';
+            saveData();
+            showToast(`已退回修改，通知设计师 ${order.designer}`);
+            render();
+        };
+
+        window.clientConfirm = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            // 弹出填写交付物链接
+            const link = prompt('请填写交付物网盘链接（归档用）：', order.driveLink);
+            if (link === null) return; // 用户取消
+            
+            order.driveLink = link || order.driveLink;
+            order.status = 'done';
+            order.actualDate = new Date().toISOString().slice(0, 10);
+            saveData();
+            showToast('已确认正稿交付，流程完结');
+            render();
+        };
+
+        window.clientRevise = function(orderId) {
+            const comment = prompt('请输入客户修改意见：');
+            if (!comment) return;
+            
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            order.status = 'revise';
+            order.version += 1;
+            saveData();
+            showToast(`客户要求修改，版本升至 v${order.version}`);
+            render();
+        };
+
+        window.changeDesigner = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const newDesigner = prompt(`当前设计师：${order.designer}\n请输入新设计师（${DESIGNERS.join('、')}）：`);
+            if (!newDesigner || !DESIGNERS.includes(newDesigner)) {
+                showToast('设计师名称无效');
+                return;
+            }
+            
+            order.designer = newDesigner;
+            order.makeDate = new Date().toISOString().slice(0, 10);
+            saveData();
+            showToast(`已更换设计师为 ${newDesigner}`);
+            render();
+        };
+
+        // 排班看板拖拽
+        window.dragStart = function(event, orderId) {
+            event.dataTransfer.setData('text/plain', orderId);
+            event.target.classList.add('dragging');
+        };
+
+        window.allowDrop = function(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+        };
+
+        window.dropCard = function(event, person) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+            
+            const orderId = event.dataTransfer.getData('text/plain');
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            if (person === '待分配') {
+                order.designer = '';
+                order.status = 'pending';
+            } else if (DESIGNERS.includes(person)) {
+                order.designer = person;
+                if (order.status === 'pending') order.status = 'designing';
+                order.makeDate = new Date().toISOString().slice(0, 10);
+            } else {
+                // 策划/AE人员不能直接分配设计任务
+                showToast('只能分配给设计师');
+                return;
+            }
+            
+            saveData();
+            showToast(`已${person === '待分配' ? '取消分配' : '分配给 ' + person}`);
+            render();
+        };
+
+        // 清除拖拽样式
+        document.addEventListener('dragend', function(e) {
+            if (e.target.classList.contains('kanban-card')) {
+                e.target.classList.remove('dragging');
+            }
+            document.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('drag-over'));
+        });
+
+        window.editKanbanOrder = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>编辑工单：${order.projectName}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">优先级</label>
+                                <select id="editPriority">
+                                    <option value="P0" ${order.priority === 'P0' ? 'selected' : ''}>P0</option>
+                                    <option value="P1" ${order.priority === 'P1' ? 'selected' : ''}>P1</option>
+                                    <option value="P2" ${order.priority === 'P2' ? 'selected' : ''}>P2</option>
+                                    <option value="P3" ${order.priority === 'P3' ? 'selected' : ''}>P3</option>
+                                    <option value="可能来" ${order.priority === '可能来' ? 'selected' : ''}>可能来</option>
+                                    <option value="当天新增" ${order.priority === '当天新增' ? 'selected' : ''}>当天新增</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">制作日期</label>
+                                <input type="date" id="editMakeDate" value="${order.makeDate || ''}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">说明</label>
+                            <textarea id="editDesc" rows="3">${order.desc || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">计划交付日期</label>
+                            <input type="date" id="editPlanDate" value="${order.planDate}">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+                        <button class="btn btn-primary" id="saveEdit">保存</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.querySelector('#saveEdit').addEventListener('click', function() {
+                order.priority = modal.querySelector('#editPriority').value;
+                order.makeDate = modal.querySelector('#editMakeDate').value;
+
+                order.desc = modal.querySelector('#editDesc').value;
+                order.planDate = modal.querySelector('#editPlanDate').value;
+                
+                saveData();
+                modal.remove();
+                showToast('工单已更新');
+                render();
+            });
+        };
+
+        window.assignFromKanban = function(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const designer = prompt(`为工单【${order.projectName}】分配设计师（${DESIGNERS.join('、')}）：`);
+            if (!designer || !DESIGNERS.includes(designer)) {
+                showToast('设计师名称无效');
+                return;
+            }
+            
+            order.designer = designer;
+            order.status = 'designing';
+            order.makeDate = new Date().toISOString().slice(0, 10);
+            saveData();
+            showToast(`已分配给 ${designer}`);
+            render();
+        };
+
+        window.showKanbanEditHelp = function() {
+            alert(`排班看板操作说明：
+
+1. 拖拽分配：按住工单卡片，拖拽到目标设计师列，即可重新分配
+2. 编辑工单：点击卡片上的"编辑"按钮，可修改优先级、制作日期、说明、交付日期
+3. 分配工单：待分配列的卡片点击"分配"按钮，选择设计师
+
+提示：
+- 只能拖拽到设计师列（蓝色标记）
+- 策划/AE列（橙色标记）不能接收设计工单
+- 制作日期用于判断当日排班`);
+        };
+
+        // AE汇总
+        window.updateDriveLink = async function(orderId, value) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                try {
+                    await apiPut(`/api/orders/${order.recordId}`, {driveLink: value});
+                    order.driveLink = value;
+                    showToast('交付物链接已更新');
+                } catch (e) {
+                    showToast('更新失败: ' + e.message);
+                }
+            }
+        };
+
+        window.showSummaryHelp = function() {
+            alert(`AE汇总页面编辑说明：
+
+可编辑列（白色背景）：
+- 交付物链接：正稿交付后由AE填写网盘地址
+
+锁定列（灰色背景，不可编辑）：
+- 项目编号、项目简述、客户、部门
+- 工作性质、交付物信息
+- 下单日期、计划交付日期
+- 设计师、状态、版本号
+
+这些字段由系统自动生成或由其他角色填写，AE不可修改以确保数据一致性。`);
+        };
+
+        window.toggleColumnSelector = function() {
+            const el = document.getElementById('columnSelector');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        };
+
+        window.applyColumnToggle = function() {
+            const checkboxes = document.querySelectorAll('.col-toggle:checked');
+            visibleCols = Array.from(checkboxes).map(cb => cb.value);
+            if (visibleCols.length === 0) {
+                showToast('至少选择一列');
+                return;
+            }
+            const customerFilter = document.getElementById('summaryCustomer')?.value || '';
+            document.getElementById('summaryTableContainer').innerHTML = renderSummaryTable(customerFilter);
+            document.getElementById('columnSelector').style.display = 'none';
+            showToast('列显示已更新');
+        };
+
+        window.exportSummary = function() {
+            const customerFilter = document.getElementById('summaryCustomer')?.value || '';
+            const filtered = customerFilter ? orders.filter(o => o.customer === customerFilter) : orders;
+            
+            const statusLabels = {
+                'pending_copy': '待文案', 'pending': '待分配', 'designing': '设计中',
+                'review': '待内审', 'client': '提交客户', 'revise': '客户修改',
+                'done': '正稿交付', 'cancelled': '已取消'
+            };
+            
+            const colHeaders = {
+                id: '项目编号', projectName: '项目简述', customer: '客户', dept: '部门',
+                workType: '工作性质', deliverType: '交付物', size: '规格尺寸', quantity: '数量', unit: '单位',
+                orderDate: '下单日期', planDate: '计划交付', makeDate: '制作日期',
+                designer: '设计师', ae: 'AE', status: '状态', version: '版本', driveLink: '交付物链接'
+            };
+            const colRender = {
+                id: o => o.id, projectName: o => o.projectName, customer: o => o.customer, dept: o => o.dept,
+                workType: o => o.workType, deliverType: o => `${o.deliverType} ${o.size} ${o.quantity}${o.unit}`,
+                size: o => o.size, quantity: o => o.quantity, unit: o => o.unit,
+                orderDate: o => o.orderDate, planDate: o => o.planDate, makeDate: o => o.makeDate || '',
+                designer: o => o.designer || '待分配', ae: o => o.ae,
+                status: o => statusLabels[o.status] || o.status, version: o => 'v' + o.version, driveLink: o => o.driveLink || ''
+            };
+            const headers = visibleCols.filter(k => colHeaders[k]).map(k => colHeaders[k]);
+            const rows = filtered.map(order => visibleCols.filter(k => colRender[k]).map(k => colRender[k](order)));
+            
+            let csv = '\uFEFF' + headers.join(',') + '\n';
+            rows.forEach(row => {
+                csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `AE项目汇总_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            
+            showToast('已导出CSV文件（可用Excel打开）');
+        };
+
+        // 基础数据管理
+        window.switchAdminTab = function(tab) {
+            document.querySelectorAll('.data-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'customers') renderAdminCustomers();
+            else if (tab === 'fonts') renderAdminFonts();
+            else if (tab === 'staff') renderAdminStaff();
+        };
+
+        window.addCustomer = function() {
+            CUSTOMERS_DATA.push({ name: '新客户', depts: ['默认部门'] });
+            saveData();
+            renderAdminCustomers();
+            showToast('已添加新客户');
+        };
+
+        window.updateCustomer = async function(idx, field, value) {
+            if (field === 'name') {
+                CUSTOMERS_DATA[idx].name = value;
+            } else if (field === 'depts') {
+                CUSTOMERS_DATA[idx].depts = value.split('、').map(d => d.trim()).filter(Boolean);
+            }
+            try {
+                const customer = CUSTOMERS_DATA[idx];
+                if (customer.recordId) {
+                    await apiPut(`/api/customers/${customer.recordId}`, {
+                        name: customer.name,
+                        depts: customer.depts
+                    });
+                }
+            } catch (e) {
+                console.error('保存客户失败:', e);
+            }
+        };
+
+        window.deleteCustomer = function(idx) {
+            if (!confirm('确定删除该客户？')) return;
+            CUSTOMERS_DATA.splice(idx, 1);
+            saveData();
+            renderAdminCustomers();
+            showToast('已删除');
+        };
+
+        window.addFont = function() {
+            FONTS_DATA.push('新字体');
+            saveData();
+            renderAdminFonts();
+            showToast('已添加新字体');
+        };
+
+        window.updateFont = async function(idx, value) {
+            FONTS_DATA[idx] = value;
+            // 字体管理通过API保存（需要字体表配置）
+        };
+
+        window.deleteFont = function(idx) {
+            if (!confirm('确定删除该字体？')) return;
+            FONTS_DATA.splice(idx, 1);
+            saveData();
+            renderAdminFonts();
+            showToast('已删除');
+        };
+
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadData();
+            
+            document.getElementById('navTabs').addEventListener('click', function(e) {
+                if (e.target.classList.contains('nav-tab')) {
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentTab = e.target.dataset.tab;
+                    render();
+                }
+            });
+            
+            render();
+        });
+    </script>
+</body>
+</html>
