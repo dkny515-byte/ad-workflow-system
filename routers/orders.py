@@ -344,13 +344,13 @@ async def create_order(order: OrderCreate):
         # 确定初始状态
         initial_status = 'pending_copy' if order.needCopy else ('designing' if order.designer else 'pending')
         
-        # 构建字段
+        # 构建字段（跳过级联单选字段，这些需要在飞书表格中手动设置）
         fields = {
             "项目编号": order_id,
             "项目简述": order.projectName,
             "工作性质": order.workType,
             "客户": order.customer,
-            "部门": order.dept or "",
+            # "部门": order.dept or "",  # 级联单选，API不支持直接写入
             "下单人": order.orderPerson or "",
             "下单日期": _date_to_timestamp(str(order.orderDate)),
             "计划交付日期": _date_to_timestamp(str(order.planDate)),
