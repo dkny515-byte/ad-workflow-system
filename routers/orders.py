@@ -126,10 +126,10 @@ def _extract_list(value):
 # ========== 状态映射 ==========
 
 def _map_status_from_feishu(status: str) -> str:
-    """飞书状态 → 系统状态"""
+    """飞书状态 → 系统状态（保留emoji+中文，宽松匹配）"""
     if not status:
         return ""
-    clean = _strip_emoji(status).strip()
+    clean = status.strip()
     # 宽松匹配：包含关键词即可
     if '文案' in clean:
         return 'pending_copy'
@@ -143,26 +143,31 @@ def _map_status_from_feishu(status: str) -> str:
         return 'client'
     if '修改' in clean:
         return 'revise'
-    if '交付' in clean or '完成' in clean:
+    if '交付' in clean or '完成' in clean or '正稿' in clean:
         return 'done'
     if '取消' in clean:
         return 'cancelled'
     return clean
 
 def _map_status_to_feishu(status: str) -> str:
-    """系统状态 → 飞书状态"""
+    """系统状态 → 飞书状态（带emoji前缀）"""
     mapping = {
-        'pending_copy': '待文案', 'pending': '待分配', 'designing': '设计中',
-        'review': '待内审', 'client': '提交客户', 'revise': '客户修改',
-        'done': '正稿交付', 'cancelled': '已取消'
+        'pending_copy': '🟡 待文案',
+        'pending': '🔵 待分配',
+        'designing': '🟣 设计中',
+        'review': '⭕️ 待内审',
+        'client': '🟢 提交客户',
+        'revise': '🟠 客户修改',
+        'done': '✅ 正稿交付',
+        'cancelled': '❌ 已取消'
     }
     return mapping.get(status, status)
 
 def _map_internal_status(status: str) -> str:
-    """飞书内审状态 → 系统内审状态"""
+    """飞书内审状态 → 系统内审状态（保留emoji+中文）"""
     if not status:
         return ""
-    clean = _strip_emoji(status).strip()
+    clean = status.strip()
     if '待审核' in clean or '待审' in clean:
         return 'pending'
     if '修改' in clean:
@@ -174,10 +179,12 @@ def _map_internal_status(status: str) -> str:
     return clean
 
 def _map_internal_status_to_feishu(status: str) -> str:
-    """系统内审状态 → 飞书内审状态"""
+    """系统内审状态 → 飞书内审状态（带emoji前缀）"""
     mapping = {
-        'pending': '内部待审核', 'revising': '内部修改',
-        'approved': '内部通过', 'exempt': '内部免审'
+        'pending': '🟡 内部待审核',
+        'revising': '🔴 内部修改',
+        'approved': '🟢 内部通过',
+        'exempt': '⚪️ 内部免审'
     }
     return mapping.get(status, "")
 
@@ -232,6 +239,16 @@ def _record_to_order(record: dict) -> dict:
         "reviewer": _extract_user(fields.get("指定内审员", ""))
     }
 
+def _date_to_timestamp(date_str: str) -> int:
+    """将日期字符串转为飞书需要的Unix时间戳（毫秒）"""
+    if not date_str:
+        return None
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return int(dt.timestamp() * 1000)
+    except:
+        return None
+
 def _order_to_fields(order: dict) -> dict:
     """将系统订单转换为飞书字段格式"""
     fields = {
@@ -241,9 +258,9 @@ def _order_to_fields(order: dict) -> dict:
         "客户": order.get("customer", ""),
         "部门": order.get("dept", ""),
         "下单人": order.get("orderPerson", ""),
-        "下单日期": order.get("orderDate", ""),
-        "计划交付日期": order.get("planDate", ""),
-        "制作日期": order.get("makeDate", ""),
+        "下单日期": _date_to_timestamp(order.get("orderDate", "")),
+        "计划交付日期": _date_to_timestamp(order.get("planDate", "")),
+        "制作日期": _date_to_timestamp(order.get("makeDate", "")),
         "优先级": order.get("priority", "P1"),
         "交付物类型": order.get("deliverType", ""),
         "规格尺寸": order.get("size", ""),
@@ -264,11 +281,11 @@ def _order_to_fields(order: dict) -> dict:
         "素材说明": order.get("materialDesc", ""),
         "肖像权": order.get("portrait", ""),
         "设计师是否提交": "是" if order.get("designerSubmitted") else "否",
-        "实际交付日期": order.get("actualDate", ""),
+        "实际交付日期": _date_to_timestamp(order.get("actualDate", "")),
         "指定内审员": feishu.get_user_field_value(order.get("reviewer", ""))
     }
-    # 过滤空值
-    return {k: v for k, v in fields.items() if v != "" and v != []}
+    # 过滤空值（但保留0和False）
+    return {k: v for k, v in fields.items() if v is not None and v != "" and v != []}
 
 
 # ========== API 路由 ==========
