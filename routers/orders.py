@@ -274,7 +274,7 @@ def _order_to_fields(order: dict) -> dict:
         "文案内容": order.get("copyContent", ""),
         "进度状态": _map_status_to_feishu(order.get("status", "")),
         "内审状态": _map_internal_status_to_feishu(order.get("internalStatus", "")),
-        "版本号": f"v{order.get('version', 1)}",
+        "版本号": order.get('version', 1),
         "AE-创建人": feishu.get_user_field_value(order.get("ae", "")),
         "使用字体": _extract_list(order.get("fonts", [])),
         "素材来源": _extract_list(order.get("materialSource", [])),
