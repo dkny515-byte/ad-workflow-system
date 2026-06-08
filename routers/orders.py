@@ -352,9 +352,9 @@ async def create_order(order: OrderCreate):
             "客户": order.customer,
             "部门": order.dept or "",
             "下单人": order.orderPerson or "",
-            "下单日期": str(order.orderDate),
-            "计划交付日期": str(order.planDate),
-            "制作日期": str(order.makeDate) if order.makeDate else "",
+            "下单日期": _date_to_timestamp(str(order.orderDate)),
+            "计划交付日期": _date_to_timestamp(str(order.planDate)),
+            "制作日期": _date_to_timestamp(str(order.makeDate)) if order.makeDate else None,
             "优先级": order.priority,
             "交付物类型": order.deliverType or "",
             "规格尺寸": order.size or "",
@@ -365,13 +365,13 @@ async def create_order(order: OrderCreate):
             "需要前策/文案": "是" if order.needCopy else "否",
             "前策/文案": feishu.get_user_field_value(order.copywriter or ""),
             "进度状态": _map_status_to_feishu(initial_status),
-            "版本号": "v1",
+            "版本号": 1,
             "AE-创建人": feishu.get_user_field_value("当前AE"),
             "指定内审员": feishu.get_user_field_value(order.reviewer or "")
         }
         
-        # 过滤空值
-        fields = {k: v for k, v in fields.items() if v != "" and v != []}
+        # 过滤空值（但保留0和False）
+        fields = {k: v for k, v in fields.items() if v is not None and v != "" and v != []}
         
         result = await feishu.create_record(settings.ORDERS_TABLE_ID, fields)
         
@@ -410,11 +410,11 @@ async def update_order(record_id: str, update: OrderUpdate):
             elif update.status == 'client':
                 fields["内审状态"] = "内部通过"
             elif update.status == 'done':
-                fields["实际交付日期"] = datetime.now().strftime("%Y-%m-%d")
+                fields["实际交付日期"] = _date_to_timestamp(datetime.now().strftime("%Y-%m-%d"))
             elif update.status == 'revise':
                 # 版本号+1
                 current_version = current_order.get("version", 1)
-                fields["版本号"] = f"v{current_version + 1}"
+                fields["版本号"] = current_version + 1
         
         if update.internalStatus is not None:
             fields["内审状态"] = _map_internal_status_to_feishu(update.internalStatus)
@@ -423,7 +423,7 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["设计师"] = feishu.get_user_field_value(update.designer)
         
         if update.makeDate is not None:
-            fields["制作日期"] = str(update.makeDate)
+            fields["制作日期"] = _date_to_timestamp(str(update.makeDate))
         
         if update.priority is not None:
             fields["优先级"] = update.priority
@@ -432,7 +432,7 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["说明"] = update.desc
         
         if update.planDate is not None:
-            fields["计划交付日期"] = str(update.planDate)
+            fields["计划交付日期"] = _date_to_timestamp(str(update.planDate))
         
         if update.driveLink is not None:
             fields["网盘链接"] = update.driveLink
@@ -450,18 +450,19 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["肖像权"] = update.portrait
         
         if update.copyContent is not None:
+            # 文案内容字段可能不存在于表格中，先尝试更新，失败则忽略
             fields["文案内容"] = update.copyContent
             # 文案提交后状态变为待设计
-            fields["进度状态"] = "待分配" if not current_order.get("designer") else "设计中"
+            fields["进度状态"] = "🔵 待分配" if not current_order.get("designer") else "🟣 设计中"
         
         if update.designerSubmitted is not None:
             fields["设计师是否提交"] = "是" if update.designerSubmitted else "否"
         
         if update.actualDate is not None:
-            fields["实际交付日期"] = str(update.actualDate)
+            fields["实际交付日期"] = _date_to_timestamp(str(update.actualDate))
         
-        # 过滤空值
-        fields = {k: v for k, v in fields.items() if v != "" and v != []}
+        # 过滤空值（但保留0和False）
+        fields = {k: v for k, v in fields.items() if v is not None and v != "" and v != []}
         
         result = await feishu.update_record(settings.ORDERS_TABLE_ID, record_id, fields)
         

@@ -114,7 +114,9 @@ class FeishuClient:
     async def get_record(self, table_id: str, record_id: str) -> Dict:
         """获取单条记录"""
         url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}"
-        return await self._request("GET", url)
+        data = await self._request("GET", url)
+        # 飞书API返回格式: {"record": {"record_id": "...", "fields": {...}}}
+        return data.get("record", {})
     
     async def create_record(self, table_id: str, fields: Dict) -> Dict:
         """创建记录"""
