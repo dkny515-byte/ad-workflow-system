@@ -992,7 +992,8 @@
         }
 
         function generateId(customer, projectName) {
-            const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const now = new Date();
+            const date = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
             const short = customer.slice(0, 4);
             const seq = String(orders.length + 1).padStart(3, '0');
             return `${short}-${date}-${seq}`;
@@ -1027,7 +1028,8 @@
 
         // AE下单页
         function renderCreate(container) {
-            const today = new Date().toISOString().slice(0, 10);
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             container.innerHTML = `
                 <div class="card">
                     <div class="card-title">📝 新建工单</div>
@@ -1482,7 +1484,9 @@
 
         // 排班看板
         function renderKanban(container) {
-            const filterDate = new Date().toISOString().slice(0, 10);
+            // 使用本地日期，避免UTC时区问题
+            const now = new Date();
+            const filterDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')`;
             
             // 所有人员作为列
             const allPeople = ['待分配', ...ALL_STAFF];
@@ -1501,10 +1505,7 @@
             
             container.innerHTML = `
                 <div class="kanban-filter-bar">
-                    <select id="kanbanFilterDate">
-                        <option value="">全部日期</option>
-                        <option value="${filterDate}" selected>今天 (${filterDate})</option>
-                    </select>
+                    <input type="date" id="kanbanFilterDate" value="${filterDate}" style="min-width:140px">
                     <select id="kanbanFilterPriority">
                         <option value="">全部优先级</option>
                         <option value="P0">P0</option>
@@ -2068,7 +2069,8 @@
             }
             
             try {
-                const makeDate = new Date().toISOString().slice(0, 10);
+                const now = new Date();
+                const makeDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
                 const result = await apiPut(`/api/orders/${order.recordId}`, {
                     designer: newDesigner,
                     makeDate: makeDate
@@ -2116,7 +2118,8 @@
                 }
             } else if (DESIGNERS.includes(person)) {
                 try {
-                    const makeDate = new Date().toISOString().slice(0, 10);
+                    const now = new Date();
+                    const makeDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
                     const updates = {
                         designer: person,
                         makeDate: makeDate
@@ -2223,7 +2226,8 @@
             }
             
             try {
-                const makeDate = new Date().toISOString().slice(0, 10);
+                const now = new Date();
+                const makeDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
                 const result = await apiPut(`/api/orders/${order.recordId}`, {
                     designer: designer,
                     status: 'designing',
@@ -2333,7 +2337,9 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `AE项目汇总_${new Date().toISOString().slice(0, 10)}.csv`;
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            link.download = `AE项目汇总_${dateStr}.csv`;
             link.click();
             
             showToast('已导出CSV文件（可用Excel打开）');
