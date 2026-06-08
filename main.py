@@ -83,6 +83,35 @@ async def test_person_field():
             "traceback": traceback.format_exc()
         }
 
+@app.get("/table-fields")
+async def table_fields():
+    """获取订单表格的所有字段名"""
+    try:
+        from feishu_client import feishu
+        from config import settings
+        
+        fields = await feishu.list_fields(settings.ORDERS_TABLE_ID)
+        
+        return {
+            "status": "ok",
+            "field_count": len(fields),
+            "fields": [
+                {
+                    "field_id": f.get("field_id"),
+                    "field_name": f.get("field_name"),
+                    "type": f.get("type"),
+                }
+                for f in fields
+            ]
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # API路由（必须在静态文件挂载之前）
 app.include_router(orders.router, prefix="/api/orders", tags=["工单"])
 app.include_router(customers.router, prefix="/api/customers", tags=["客户"])
