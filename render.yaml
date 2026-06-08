@@ -18,13 +18,3 @@ services:
         sync: false
       - key: WEBHOOK_URL
         sync: false
-      - key: DESIGNERS
-        sync: false
-      - key: OTHER_STAFF
-        sync: false
-      - key: REVIEWERS
-        sync: false
-      - key: USER_ID_MAP
-        sync: false
-      - key: DEPT_IDS
-        sync: false
