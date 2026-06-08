@@ -221,20 +221,20 @@ def _record_to_order(record: dict) -> dict:
         "unit": _extract_text(fields.get("单位", "个")),
         "desc": _extract_text(fields.get("说明", "")),
         "driveLink": _extract_text(fields.get("网盘链接", "")),
-        "designer": _extract_user(fields.get("设计师", "")),
-        "needCopy": _extract_text(fields.get("需要前策/文案", "否")) == "是",
-        "copywriter": _extract_user(fields.get("前策/文案", "")),
+        "designer": _extract_user(fields.get("设计师 (人员 )", "")),
+        "needCopy": _extract_text(fields.get("需要前策|文案", "否")) == "是",
+        "copywriter": _extract_user(fields.get("前策|文案 (人员 )", "")),
         "copyContent": _extract_text(fields.get("文案内容", "")),
         "status": _map_status_from_feishu(_extract_text(fields.get("进度状态", ""))),
         "internalStatus": _map_internal_status(_extract_text(fields.get("内审状态", ""))),
-        "version": _parse_version(_extract_text(fields.get("版本号", "v1"))),
+        "version": fields.get("版本号", 1) if isinstance(fields.get("版本号"), (int, float)) else _parse_version(_extract_text(fields.get("版本号", "v1"))),
         "createDate": _extract_date(fields.get("下单日期", "")),
         "ae": _extract_user(fields.get("AE-创建人", "")),
         "fonts": _extract_list(fields.get("使用字体", "")),
         "materialSource": _extract_list(fields.get("素材来源", "")),
         "materialDesc": _extract_text(fields.get("素材说明", "")),
         "portrait": _extract_option(fields.get("肖像权", "")),
-        "designerSubmitted": _extract_text(fields.get("设计师是否提交", "")) == "是",
+        "designerSubmitted": _extract_text(fields.get("设计师提交", "")) == "是",
         "actualDate": _extract_date(fields.get("实际交付日期", "")),
         "reviewer": _extract_user(fields.get("指定内审员", ""))
     }
@@ -269,9 +269,9 @@ def _order_to_fields(order: dict) -> dict:
         "说明": order.get("desc", ""),
         "网盘链接": order.get("driveLink", ""),
         "设计师": feishu.get_user_field_value(order.get("designer", "")),
-        "需要前策/文案": "是" if order.get("needCopy") else "否",
-        "前策/文案": feishu.get_user_field_value(order.get("copywriter", "")),
-        "文案内容": order.get("copyContent", ""),
+        "需要前策|文案": "是" if order.get("needCopy") else "否",
+        "前策|文案 (人员 )": feishu.get_user_field_value(order.get("copywriter", "")),
+        "文案内容": order.get("copyContent", ""),  # 可能不存在，会被过滤
         "进度状态": _map_status_to_feishu(order.get("status", "")),
         "内审状态": _map_internal_status_to_feishu(order.get("internalStatus", "")),
         "版本号": order.get('version', 1),
@@ -280,7 +280,7 @@ def _order_to_fields(order: dict) -> dict:
         "素材来源": _extract_list(order.get("materialSource", [])),
         "素材说明": order.get("materialDesc", ""),
         "肖像权": order.get("portrait", ""),
-        "设计师是否提交": "是" if order.get("designerSubmitted") else "否",
+        "设计师提交": "是" if order.get("designerSubmitted") else "否",
         "实际交付日期": _date_to_timestamp(order.get("actualDate", "")),
         "指定内审员": feishu.get_user_field_value(order.get("reviewer", ""))
     }
@@ -361,9 +361,9 @@ async def create_order(order: OrderCreate):
             "数量": order.quantity,
             "单位": order.unit or "个",
             "说明": order.desc or "",
-            "设计师": feishu.get_user_field_value(order.designer or ""),
-            "需要前策/文案": "是" if order.needCopy else "否",
-            "前策/文案": feishu.get_user_field_value(order.copywriter or ""),
+            "设计师 (人员 )": feishu.get_user_field_value(order.designer or ""),
+            "需要前策|文案": "是" if order.needCopy else "否",
+            "前策|文案 (人员 )": feishu.get_user_field_value(order.copywriter or ""),
             "进度状态": _map_status_to_feishu(initial_status),
             "版本号": 1,
             "AE-创建人": feishu.get_user_field_value("当前AE"),
@@ -405,10 +405,10 @@ async def update_order(record_id: str, update: OrderUpdate):
             
             # 状态变更时的自动逻辑
             if update.status == 'review':
-                fields["内审状态"] = "内部待审核"
-                fields["设计师是否提交"] = "是"
+                fields["内审状态"] = "🟡 内部待审核"
+                fields["设计师提交"] = "是"
             elif update.status == 'client':
-                fields["内审状态"] = "内部通过"
+                fields["内审状态"] = "🟢 内部通过"
             elif update.status == 'done':
                 fields["实际交付日期"] = _date_to_timestamp(datetime.now().strftime("%Y-%m-%d"))
             elif update.status == 'revise':
@@ -420,7 +420,7 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["内审状态"] = _map_internal_status_to_feishu(update.internalStatus)
         
         if update.designer is not None:
-            fields["设计师"] = feishu.get_user_field_value(update.designer)
+            fields["设计师 (人员 )"] = feishu.get_user_field_value(update.designer)
         
         if update.makeDate is not None:
             fields["制作日期"] = _date_to_timestamp(str(update.makeDate))
@@ -456,7 +456,7 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["进度状态"] = "🔵 待分配" if not current_order.get("designer") else "🟣 设计中"
         
         if update.designerSubmitted is not None:
-            fields["设计师是否提交"] = "是" if update.designerSubmitted else "否"
+            fields["设计师提交"] = "是" if update.designerSubmitted else "否"
         
         if update.actualDate is not None:
             fields["实际交付日期"] = _date_to_timestamp(str(update.actualDate))

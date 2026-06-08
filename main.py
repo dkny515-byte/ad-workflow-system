@@ -60,7 +60,7 @@ async def test_person_field():
         person_samples = []
         for r in records[:3]:  # 只看前3条
             fields = r.get("fields", {})
-            for field_name in ["设计师", "AE-创建人", "指定内审员", "前策/文案"]:
+            for field_name in ["设计师 (人员 )", "AE-创建人", "指定内审员", "前策|文案 (人员 )"]:
                 if field_name in fields and fields[field_name]:
                     person_samples.append({
                         "record_id": r.get("record_id"),
