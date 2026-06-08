@@ -143,25 +143,39 @@ class FeishuClient:
     
     # ========== 群机器人通知 ==========
     
-    async def send_webhook(self, text: str, at_users: list = None) -> bool:
-        """发送群机器人消息，支持@用户"""
+    async def send_webhook(self, text: str, at_users: list = None, title: str = None) -> bool:
+        """发送群机器人消息，支持@用户（使用post消息类型）"""
         if not settings.WEBHOOK_URL:
             return False
             
         try:
-            # 构建消息内容，支持@用户
-            content = {"text": text}
+            # 构建post消息内容
+            content_items = []
             
-            # 如果有用户需要@，添加at标签
+            # 添加文本内容
+            if text:
+                content_items.append({"tag": "text", "text": text})
+            
+            # 添加@用户
             if at_users:
                 for user_id in at_users:
                     if user_id:
-                        content["text"] += f' <at id="{user_id}"></at>'
+                        content_items.append({"tag": "at", "user_id": user_id})
+            
+            # 构建post消息
+            post_content = {
+                "zh_cn": {
+                    "title": title or "广告工单系统",
+                    "content": [content_items]
+                }
+            }
             
             async with httpx.AsyncClient() as client:
                 resp = await client.post(settings.WEBHOOK_URL, json={
-                    "msg_type": "text",
-                    "content": content
+                    "msg_type": "post",
+                    "content": {
+                        "post": post_content
+                    }
                 })
                 return resp.status_code == 200
         except Exception as e:

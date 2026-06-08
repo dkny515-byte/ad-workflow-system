@@ -381,10 +381,11 @@ async def create_order(order: OrderCreate):
         
         if order.designer:
             await feishu.send_webhook(
-                f"📋 新工单创建\n项目：【{order.workType}】{order.projectName}\n"
+                f"📋 新工单分配给你\n项目：【{order.workType}】{order.projectName}\n"
                 f"客户：{order.customer} · {order.dept or ''}\n"
-                f"分配设计师：{order.designer}\n交付日期：{order.planDate}",
-                at_users=[designer_id] if designer_id else None
+                f"交付日期：{order.planDate}\n请尽快开始设计工作",
+                at_users=[designer_id] if designer_id else None,
+                title="📋 新工单分配"
             )
         
         return _record_to_order(result)
@@ -471,18 +472,71 @@ async def update_order(record_id: str, update: OrderUpdate):
         
         result = await feishu.update_record(settings.ORDERS_TABLE_ID, record_id, fields)
         
-        # 发送状态变更通知
+        # 发送状态变更通知 - 根据状态@下一步办理者
         if update.status and update.status != current_order.get("status"):
             new_status_label = STATUS_LABELS.get(update.status, update.status)
-            designer_name = current_order.get('designer', '')
-            designer_id = feishu.get_user_id(designer_name) if designer_name else None
             
-            await feishu.send_webhook(
-                f"📢 工单状态变更\n项目：{current_order.get('projectName')}\n"
-                f"新状态：{new_status_label}\n"
-                f"设计师：{designer_name or '未分配'}",
-                at_users=[designer_id] if designer_id else None
-            )
+            # 确定需要@谁
+            at_user_id = None
+            notify_text = ""
+            title = "📢 工单状态变更"
+            
+            if update.status == 'review':
+                # 设计师提交内审 → @内审员
+                reviewer_name = current_order.get('reviewer', '')
+                reviewer_id = feishu.get_user_id(reviewer_name) if reviewer_name else None
+                at_user_id = reviewer_id
+                notify_text = (f"⭕️ 待内审\n项目：{current_order.get('projectName')}\n"
+                              f"设计师：{current_order.get('designer', '未分配')}\n"
+                              f"请尽快审核")
+                title = "⭕️ 工单待内审"
+                
+            elif update.status == 'client':
+                # 内审通过提交客户 → @AE
+                ae_name = current_order.get('ae', '')
+                ae_id = feishu.get_user_id(ae_name) if ae_name else None
+                at_user_id = ae_id
+                notify_text = (f"🟢 已内审通过，请提交客户\n"
+                              f"项目：{current_order.get('projectName')}\n"
+                              f"设计师：{current_order.get('designer', '未分配')}")
+                title = "🟢 内审通过"
+                
+            elif update.status == 'revise':
+                # 客户反馈修改 → @设计师
+                designer_name = current_order.get('designer', '')
+                designer_id = feishu.get_user_id(designer_name) if designer_name else None
+                at_user_id = designer_id
+                notify_text = (f"🟠 客户要求修改\n"
+                              f"项目：{current_order.get('projectName')}\n"
+                              f"请查看修改意见并调整")
+                title = "🟠 客户修改"
+                
+            elif update.status == 'done':
+                # 正稿交付 → @AE
+                ae_name = current_order.get('ae', '')
+                ae_id = feishu.get_user_id(ae_name) if ae_name else None
+                at_user_id = ae_id
+                notify_text = (f"✅ 正稿已交付\n"
+                              f"项目：{current_order.get('projectName')}\n"
+                              f"请归档并发送给客户")
+                title = "✅ 正稿交付"
+                
+            elif update.status == 'designing':
+                # 文案完成/分配设计师 → @设计师
+                designer_name = current_order.get('designer', '')
+                designer_id = feishu.get_user_id(designer_name) if designer_name else None
+                at_user_id = designer_id
+                notify_text = (f"🟣 可以开始设计\n"
+                              f"项目：{current_order.get('projectName')}\n"
+                              f"请查看需求并开始设计")
+                title = "🟣 开始设计"
+            
+            if notify_text:
+                await feishu.send_webhook(
+                    notify_text,
+                    at_users=[at_user_id] if at_user_id else None,
+                    title=title
+                )
         
         return _record_to_order(result)
     except Exception as e:
