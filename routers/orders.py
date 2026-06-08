@@ -376,11 +376,15 @@ async def create_order(order: OrderCreate):
         result = await feishu.create_record(settings.ORDERS_TABLE_ID, fields)
         
         # 发送通知
+        designer_name = order.designer or ""
+        designer_id = feishu.get_user_id(designer_name) if designer_name else None
+        
         if order.designer:
             await feishu.send_webhook(
                 f"📋 新工单创建\n项目：【{order.workType}】{order.projectName}\n"
                 f"客户：{order.customer} · {order.dept or ''}\n"
-                f"分配设计师：{order.designer}\n交付日期：{order.planDate}"
+                f"分配设计师：{order.designer}\n交付日期：{order.planDate}",
+                at_users=[designer_id] if designer_id else None
             )
         
         return _record_to_order(result)
@@ -406,11 +410,12 @@ async def update_order(record_id: str, update: OrderUpdate):
             # 状态变更时的自动逻辑
             if update.status == 'review':
                 fields["内审状态"] = "🟡 内部待审核"
-                fields["设计师提交"] = "是"
+                fields["设计师提交"] = True  # Checkbox字段需要布尔值
             elif update.status == 'client':
                 fields["内审状态"] = "🟢 内部通过"
             elif update.status == 'done':
-                fields["实际交付日期"] = _date_to_timestamp(datetime.now().strftime("%Y-%m-%d"))
+                # 实际交付日期字段不存在，跳过
+                pass
             elif update.status == 'revise':
                 # 版本号+1
                 current_version = current_order.get("version", 1)
@@ -450,16 +455,16 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["肖像权"] = update.portrait
         
         if update.copyContent is not None:
-            # 文案内容字段可能不存在于表格中，先尝试更新，失败则忽略
-            fields["文案内容"] = update.copyContent
+            # 文案内容字段不存在于表格中，跳过
             # 文案提交后状态变为待设计
             fields["进度状态"] = "🔵 待分配" if not current_order.get("designer") else "🟣 设计中"
         
         if update.designerSubmitted is not None:
-            fields["设计师提交"] = "是" if update.designerSubmitted else "否"
+            fields["设计师提交"] = True if update.designerSubmitted else False
         
-        if update.actualDate is not None:
-            fields["实际交付日期"] = _date_to_timestamp(str(update.actualDate))
+        # 实际交付日期字段不存在，跳过
+        # if update.actualDate is not None:
+        #     fields["实际交付日期"] = _date_to_timestamp(str(update.actualDate))
         
         # 过滤空值（但保留0和False）
         fields = {k: v for k, v in fields.items() if v is not None and v != "" and v != []}
@@ -469,10 +474,14 @@ async def update_order(record_id: str, update: OrderUpdate):
         # 发送状态变更通知
         if update.status and update.status != current_order.get("status"):
             new_status_label = STATUS_LABELS.get(update.status, update.status)
+            designer_name = current_order.get('designer', '')
+            designer_id = feishu.get_user_id(designer_name) if designer_name else None
+            
             await feishu.send_webhook(
                 f"📢 工单状态变更\n项目：{current_order.get('projectName')}\n"
                 f"新状态：{new_status_label}\n"
-                f"设计师：{current_order.get('designer', '未分配')}"
+                f"设计师：{designer_name or '未分配'}",
+                at_users=[designer_id] if designer_id else None
             )
         
         return _record_to_order(result)
