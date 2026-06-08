@@ -120,12 +120,12 @@ class FeishuClient:
     
     async def create_record(self, table_id: str, fields: Dict) -> Dict:
         """创建记录"""
-        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records?user_id_type=user_id"
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records?user_id_type=open_id"
         return await self._request("POST", url, json={"fields": fields})
     
     async def update_record(self, table_id: str, record_id: str, fields: Dict) -> Dict:
         """更新记录"""
-        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}?user_id_type=user_id"
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}?user_id_type=open_id"
         return await self._request("PUT", url, json={"fields": fields})
     
     async def delete_record(self, table_id: str, record_id: str) -> Dict:
