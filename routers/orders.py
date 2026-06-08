@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
+from datetime import datetime
+import re
 from models import OrderCreate, OrderUpdate, OrderResponse
 from feishu_client import feishu
 from config import settings
@@ -29,89 +31,117 @@ INTERNAL_STATUS_MAP = {
     'pending': '内部待审核', 'revising': '内部修改', 'approved': '内部通过', 'exempt': '内部免审'
 }
 
-def _record_to_order(record: dict) -> dict:
-    """将飞书记录转换为系统订单格式"""
-    fields = record.get("fields", {})
-    return {
-        "recordId": record.get("record_id", ""),
-        "id": fields.get("项目编号", ""),
-        "projectName": fields.get("项目简述", ""),
-        "workType": fields.get("工作性质", ""),
-        "customer": fields.get("客户", ""),
-        "dept": fields.get("部门", ""),
-        "orderPerson": fields.get("下单人", ""),
-        "orderDate": fields.get("下单日期", ""),
-        "planDate": fields.get("计划交付日期", ""),
-        "makeDate": fields.get("制作日期", ""),
-        "priority": fields.get("优先级", "P1"),
-        "deliverType": fields.get("交付物类型", ""),
-        "size": fields.get("规格尺寸", ""),
-        "quantity": fields.get("数量", 1),
-        "unit": fields.get("单位", "个"),
-        "desc": fields.get("说明", ""),
-        "driveLink": fields.get("网盘链接", ""),
-        "designer": fields.get("设计师", ""),
-        "needCopy": fields.get("需要前策/文案", "否") == "是",
-        "copywriter": fields.get("前策/文案", ""),
-        "copyContent": fields.get("文案内容", ""),
-        "status": _map_status_from_feishu(fields.get("进度状态", "")),
-        "internalStatus": _map_internal_status(fields.get("内审状态", "")),
-        "version": _parse_version(fields.get("版本号", "v1")),
-        "createDate": fields.get("下单日期", ""),
-        "ae": fields.get("AE-创建人", ""),
-        "fonts": _parse_list(fields.get("使用字体", "")),
-        "materialSource": _parse_list(fields.get("素材来源", "")),
-        "materialDesc": fields.get("素材说明", ""),
-        "portrait": fields.get("肖像权", ""),
-        "designerSubmitted": fields.get("设计师是否提交", "") == "是",
-        "actualDate": fields.get("实际交付日期", ""),
-        "reviewer": fields.get("指定内审员", "")
-    }
 
-def _order_to_fields(order: dict) -> dict:
-    """将系统订单转换为飞书字段格式"""
-    return {
-        "项目编号": order.get("id", ""),
-        "项目简述": order.get("projectName", ""),
-        "工作性质": order.get("workType", ""),
-        "客户": order.get("customer", ""),
-        "部门": order.get("dept", ""),
-        "下单人": order.get("orderPerson", ""),
-        "下单日期": order.get("orderDate", ""),
-        "计划交付日期": order.get("planDate", ""),
-        "制作日期": order.get("makeDate", ""),
-        "优先级": order.get("priority", "P1"),
-        "交付物类型": order.get("deliverType", ""),
-        "规格尺寸": order.get("size", ""),
-        "数量": order.get("quantity", 1),
-        "单位": order.get("unit", "个"),
-        "说明": order.get("desc", ""),
-        "网盘链接": order.get("driveLink", ""),
-        "设计师": order.get("designer", ""),
-        "需要前策/文案": "是" if order.get("needCopy") else "否",
-        "前策/文案": order.get("copywriter", ""),
-        "文案内容": order.get("copyContent", ""),
-        "进度状态": _map_status_to_feishu(order.get("status", "")),
-        "内审状态": _map_internal_status_to_feishu(order.get("internalStatus", "")),
-        "版本号": f"v{order.get('version', 1)}",
-        "AE-创建人": order.get("ae", ""),
-        "使用字体": _format_list(order.get("fonts", [])),
-        "素材来源": _format_list(order.get("materialSource", [])),
-        "素材说明": order.get("materialDesc", ""),
-        "肖像权": order.get("portrait", ""),
-        "设计师是否提交": "是" if order.get("designerSubmitted") else "否",
-        "实际交付日期": order.get("actualDate", ""),
-        "指定内审员": order.get("reviewer", "")
-    }
+# ========== 字段提取辅助函数 ==========
+
+def _strip_emoji(text: str) -> str:
+    """去掉文本中的emoji，保留纯中文"""
+    if not text:
+        return ""
+    emoji_pattern = re.compile(
+        "["
+        "\U0001F600-\U0001F64F"
+        "\U0001F300-\U0001F5FF"
+        "\U0001F680-\U0001F6FF"
+        "\U0001F1E0-\U0001F1FF"
+        "\U00002702-\U000027B0"
+        "\U000024C2-\U0001F251"
+        "\U0001F900-\U0001F9FF"
+        "\U00002600-\U000026FF"
+        "\U00002700-\U000027BF"
+        "]+",
+        flags=re.UNICODE,
+    )
+    return emoji_pattern.sub(r'', text).strip()
+
+def _extract_text(value):
+    """从飞书富文本/文本字段提取纯文本"""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        texts = []
+        for item in value:
+            if isinstance(item, dict) and "text" in item:
+                texts.append(str(item["text"]))
+            elif isinstance(item, str):
+                texts.append(item)
+        return "".join(texts)
+    return str(value)
+
+def _extract_date(value):
+    """从飞书日期字段提取日期字符串"""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (int, float)):
+        try:
+            dt = datetime.fromtimestamp(value / 1000)
+            return dt.strftime("%Y-%m-%d")
+        except:
+            return str(value)
+    return str(value)
+
+def _extract_user(value):
+    """从飞书用户字段提取用户名"""
+    return feishu.extract_user_name(value)
+
+def _extract_option(value):
+    """从飞书选项字段提取文本"""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        if len(value) == 0:
+            return ""
+        first = value[0]
+        if isinstance(first, str):
+            return ", ".join(value)
+        if isinstance(first, dict):
+            return ", ".join([str(v.get("text", v)) for v in value])
+    if isinstance(value, dict):
+        return value.get("text", str(value))
+    return str(value)
+
+def _extract_list(value):
+    """从飞书字段提取字符串列表"""
+    if not value:
+        return []
+    if isinstance(value, list):
+        result = []
+        for item in value:
+            if isinstance(item, dict) and "text" in item:
+                result.append(str(item["text"]))
+            elif isinstance(item, str):
+                result.append(item)
+        return result
+    if isinstance(value, str):
+        return [v.strip() for v in value.split(",") if v.strip()]
+    return [str(value)]
+
+
+# ========== 状态映射 ==========
 
 def _map_status_from_feishu(status: str) -> str:
     """飞书状态 → 系统状态"""
+    if not status:
+        return ""
+    clean = _strip_emoji(status)
     mapping = {
-        '待文案': 'pending_copy', '待分配': 'pending', '设计中': 'designing',
-        '待内审': 'review', '提交客户': 'client', '客户修改': 'revise',
-        '正稿交付': 'done', '已取消': 'cancelled'
+        '待文案': 'pending_copy',
+        '待分配': 'pending',
+        '待反馈': 'pending',
+        '设计中': 'designing',
+        '待内审': 'review',
+        '提交客户': 'client',
+        '客户修改': 'revise',
+        '正稿交付': 'done',
+        '已取消': 'cancelled'
     }
-    return mapping.get(status, status)
+    return mapping.get(clean, status)
 
 def _map_status_to_feishu(status: str) -> str:
     """系统状态 → 飞书状态"""
@@ -124,11 +154,16 @@ def _map_status_to_feishu(status: str) -> str:
 
 def _map_internal_status(status: str) -> str:
     """飞书内审状态 → 系统内审状态"""
+    if not status:
+        return ""
+    clean = _strip_emoji(status)
     mapping = {
-        '内部待审核': 'pending', '内部修改': 'revising',
-        '内部通过': 'approved', '内部免审': 'exempt'
+        '内部待审核': 'pending',
+        '内部修改': 'revising',
+        '内部通过': 'approved',
+        '内部免审': 'exempt'
     }
-    return mapping.get(status, status)
+    return mapping.get(clean, status)
 
 def _map_internal_status_to_feishu(status: str) -> str:
     """系统内审状态 → 飞书内审状态"""
@@ -147,23 +182,88 @@ def _parse_version(version_str: str) -> int:
     except:
         return 1
 
-def _parse_list(value) -> list:
-    """解析列表字段"""
-    if not value:
-        return []
-    if isinstance(value, list):
-        return value
-    if isinstance(value, str):
-        return [v.strip() for v in value.split(",") if v.strip()]
-    return []
 
-def _format_list(value: list) -> str:
-    """格式化列表为字符串"""
-    if not value:
-        return ""
-    if isinstance(value, list):
-        return ", ".join(value)
-    return str(value)
+# ========== 记录转换 ==========
+
+def _record_to_order(record: dict) -> dict:
+    """将飞书记录转换为系统订单格式"""
+    fields = record.get("fields", {})
+    return {
+        "recordId": record.get("record_id", ""),
+        "id": _extract_text(fields.get("项目编号", "")),
+        "projectName": _extract_text(fields.get("项目简述", "")),
+        "workType": _extract_text(fields.get("工作性质", "")),
+        "customer": _extract_text(fields.get("客户", "")),
+        "dept": _extract_text(fields.get("部门", "")),
+        "orderPerson": _extract_text(fields.get("下单人", "")),
+        "orderDate": _extract_date(fields.get("下单日期", "")),
+        "planDate": _extract_date(fields.get("计划交付日期", "")),
+        "makeDate": _extract_date(fields.get("制作日期", "")),
+        "priority": _extract_text(fields.get("优先级", "P1")),
+        "deliverType": _extract_text(fields.get("交付物类型", "")),
+        "size": _extract_text(fields.get("规格尺寸", "")),
+        "quantity": fields.get("数量", 1) if isinstance(fields.get("数量"), (int, float)) else 1,
+        "unit": _extract_text(fields.get("单位", "个")),
+        "desc": _extract_text(fields.get("说明", "")),
+        "driveLink": _extract_text(fields.get("网盘链接", "")),
+        "designer": _extract_user(fields.get("设计师", "")),
+        "needCopy": _extract_text(fields.get("需要前策/文案", "否")) == "是",
+        "copywriter": _extract_user(fields.get("前策/文案", "")),
+        "copyContent": _extract_text(fields.get("文案内容", "")),
+        "status": _map_status_from_feishu(_extract_text(fields.get("进度状态", ""))),
+        "internalStatus": _map_internal_status(_extract_text(fields.get("内审状态", ""))),
+        "version": _parse_version(_extract_text(fields.get("版本号", "v1"))),
+        "createDate": _extract_date(fields.get("下单日期", "")),
+        "ae": _extract_user(fields.get("AE-创建人", "")),
+        "fonts": _extract_list(fields.get("使用字体", "")),
+        "materialSource": _extract_list(fields.get("素材来源", "")),
+        "materialDesc": _extract_text(fields.get("素材说明", "")),
+        "portrait": _extract_option(fields.get("肖像权", "")),
+        "designerSubmitted": _extract_text(fields.get("设计师是否提交", "")) == "是",
+        "actualDate": _extract_date(fields.get("实际交付日期", "")),
+        "reviewer": _extract_user(fields.get("指定内审员", ""))
+    }
+
+def _order_to_fields(order: dict) -> dict:
+    """将系统订单转换为飞书字段格式"""
+    fields = {
+        "项目编号": order.get("id", ""),
+        "项目简述": order.get("projectName", ""),
+        "工作性质": order.get("workType", ""),
+        "客户": order.get("customer", ""),
+        "部门": order.get("dept", ""),
+        "下单人": order.get("orderPerson", ""),
+        "下单日期": order.get("orderDate", ""),
+        "计划交付日期": order.get("planDate", ""),
+        "制作日期": order.get("makeDate", ""),
+        "优先级": order.get("priority", "P1"),
+        "交付物类型": order.get("deliverType", ""),
+        "规格尺寸": order.get("size", ""),
+        "数量": order.get("quantity", 1),
+        "单位": order.get("unit", "个"),
+        "说明": order.get("desc", ""),
+        "网盘链接": order.get("driveLink", ""),
+        "设计师": feishu.get_user_field_value(order.get("designer", "")),
+        "需要前策/文案": "是" if order.get("needCopy") else "否",
+        "前策/文案": feishu.get_user_field_value(order.get("copywriter", "")),
+        "文案内容": order.get("copyContent", ""),
+        "进度状态": _map_status_to_feishu(order.get("status", "")),
+        "内审状态": _map_internal_status_to_feishu(order.get("internalStatus", "")),
+        "版本号": f"v{order.get('version', 1)}",
+        "AE-创建人": feishu.get_user_field_value(order.get("ae", "")),
+        "使用字体": _extract_list(order.get("fonts", [])),
+        "素材来源": _extract_list(order.get("materialSource", [])),
+        "素材说明": order.get("materialDesc", ""),
+        "肖像权": order.get("portrait", ""),
+        "设计师是否提交": "是" if order.get("designerSubmitted") else "否",
+        "实际交付日期": order.get("actualDate", ""),
+        "指定内审员": feishu.get_user_field_value(order.get("reviewer", ""))
+    }
+    # 过滤空值
+    return {k: v for k, v in fields.items() if v != "" and v != []}
+
+
+# ========== API 路由 ==========
 
 @router.get("/", response_model=List[OrderResponse])
 async def list_orders(
@@ -208,12 +308,11 @@ async def create_order(order: OrderCreate):
     """创建工单"""
     try:
         # 生成编号
-        from datetime import datetime
         date_str = datetime.now().strftime("%Y%m%d")
         short = order.customer[:4] if order.customer else "NEW"
         
         # 获取当前记录数用于序号
-        records = await feishu.list_records(settings.ORDERS_TABLE_ID, page_size=1)
+        records = await feishu.list_records(settings.ORDERS_TABLE_ID)
         seq = len(records) + 1 if records else 1
         order_id = f"{short}-{date_str}-{seq:03d}"
         
@@ -237,14 +336,17 @@ async def create_order(order: OrderCreate):
             "数量": order.quantity,
             "单位": order.unit or "个",
             "说明": order.desc or "",
-            "设计师": order.designer or "",
+            "设计师": feishu.get_user_field_value(order.designer or ""),
             "需要前策/文案": "是" if order.needCopy else "否",
-            "前策/文案": order.copywriter or "",
+            "前策/文案": feishu.get_user_field_value(order.copywriter or ""),
             "进度状态": _map_status_to_feishu(initial_status),
             "版本号": "v1",
-            "AE-创建人": "当前AE",  # 实际应从登录用户获取
-            "指定内审员": order.reviewer or settings.REVIEWERS[0] if settings.REVIEWERS else ""
+            "AE-创建人": feishu.get_user_field_value("当前AE"),
+            "指定内审员": feishu.get_user_field_value(order.reviewer or "")
         }
+        
+        # 过滤空值
+        fields = {k: v for k, v in fields.items() if v != "" and v != []}
         
         result = await feishu.create_record(settings.ORDERS_TABLE_ID, fields)
         
@@ -256,8 +358,10 @@ async def create_order(order: OrderCreate):
                 f"分配设计师：{order.designer}\n交付日期：{order.planDate}"
             )
         
-        return _record_to_order(result.get("record", {}))
+        return _record_to_order(result)
     except Exception as e:
+        import traceback
+        print(f"[ERROR] create_order: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{record_id}", response_model=OrderResponse)
@@ -291,7 +395,7 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["内审状态"] = _map_internal_status_to_feishu(update.internalStatus)
         
         if update.designer is not None:
-            fields["设计师"] = update.designer
+            fields["设计师"] = feishu.get_user_field_value(update.designer)
         
         if update.makeDate is not None:
             fields["制作日期"] = str(update.makeDate)
@@ -309,10 +413,10 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["网盘链接"] = update.driveLink
         
         if update.fonts is not None:
-            fields["使用字体"] = _format_list(update.fonts)
+            fields["使用字体"] = _extract_list(update.fonts)
         
         if update.materialSource is not None:
-            fields["素材来源"] = _format_list(update.materialSource)
+            fields["素材来源"] = _extract_list(update.materialSource)
         
         if update.materialDesc is not None:
             fields["素材说明"] = update.materialDesc
@@ -331,6 +435,9 @@ async def update_order(record_id: str, update: OrderUpdate):
         if update.actualDate is not None:
             fields["实际交付日期"] = str(update.actualDate)
         
+        # 过滤空值
+        fields = {k: v for k, v in fields.items() if v != "" and v != []}
+        
         result = await feishu.update_record(settings.ORDERS_TABLE_ID, record_id, fields)
         
         # 发送状态变更通知
@@ -342,8 +449,10 @@ async def update_order(record_id: str, update: OrderUpdate):
                 f"设计师：{current_order.get('designer', '未分配')}"
             )
         
-        return _record_to_order(result.get("record", current))
+        return _record_to_order(result)
     except Exception as e:
+        import traceback
+        print(f"[ERROR] update_order: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{record_id}")
@@ -354,5 +463,3 @@ async def delete_order(record_id: str):
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-from datetime import datetime

@@ -46,6 +46,43 @@ async def diagnostic():
         "feishu_connection": feishu_test,
     }
 
+@app.get("/test-person-field")
+async def test_person_field():
+    """测试人员字段格式：读取现有记录中的人员字段数据"""
+    try:
+        from feishu_client import feishu
+        from config import settings
+        
+        # 读取现有记录，看人员字段的实际格式
+        records = await feishu.list_records(settings.ORDERS_TABLE_ID)
+        
+        # 提取人员字段的原始数据
+        person_samples = []
+        for r in records[:3]:  # 只看前3条
+            fields = r.get("fields", {})
+            for field_name in ["设计师", "AE-创建人", "指定内审员", "前策/文案"]:
+                if field_name in fields and fields[field_name]:
+                    person_samples.append({
+                        "record_id": r.get("record_id"),
+                        "field_name": field_name,
+                        "raw_value": fields[field_name],
+                        "value_type": type(fields[field_name]).__name__
+                    })
+        
+        return {
+            "status": "ok",
+            "sample_count": len(person_samples),
+            "samples": person_samples,
+            "hint": "如果raw_value是数组且包含{'id': 'ou_xxx'}对象，说明需要ou_xxx格式的ID；如果是纯文本，说明字段是文本类型"
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # API路由（必须在静态文件挂载之前）
 app.include_router(orders.router, prefix="/api/orders", tags=["工单"])
 app.include_router(customers.router, prefix="/api/customers", tags=["客户"])

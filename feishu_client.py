@@ -8,12 +8,60 @@ class FeishuClient:
         self.app_id = settings.FEISHU_APP_ID
         self.app_secret = settings.FEISHU_APP_SECRET
         self.tenant_access_token = None
+        self._user_id_cache = {}  # 昵称 -> 用户ID 缓存
         
         # 环境变量校验
         if not self.app_id:
             raise ValueError("FEISHU_APP_ID 环境变量未设置")
         if not self.app_secret:
             raise ValueError("FEISHU_APP_SECRET 环境变量未设置")
+    
+    def _get_user_id_map(self) -> dict:
+        """获取用户昵称到ID的映射"""
+        try:
+            return json.loads(settings.USER_ID_MAP) if hasattr(settings, 'USER_ID_MAP') else {}
+        except:
+            return {}
+    
+    def get_user_id(self, name: str) -> Optional[str]:
+        """根据昵称获取飞书用户ID"""
+        if not name:
+            return None
+        # 先查缓存
+        if name in self._user_id_cache:
+            return self._user_id_cache[name]
+        # 再查配置映射
+        user_map = self._get_user_id_map()
+        if name in user_map:
+            self._user_id_cache[name] = user_map[name]
+            return user_map[name]
+        return None
+    
+    def get_user_field_value(self, name: str) -> Any:
+        """获取人员字段的值：如果有用户ID则返回对象数组，否则返回文本"""
+        if not name:
+            return ""
+        user_id = self.get_user_id(name)
+        if user_id:
+            return [{"id": user_id, "type": "user"}]
+        return name
+    
+    def extract_user_name(self, value: Any) -> str:
+        """从飞书人员字段提取用户名"""
+        if not value:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, list):
+            if len(value) == 0:
+                return ""
+            first = value[0]
+            if isinstance(first, dict):
+                return first.get("name", first.get("en_name", first.get("text", "")))
+            return str(first)
+        if isinstance(value, dict):
+            return value.get("name", value.get("en_name", value.get("text", "")))
+        return str(value)
         
     async def _get_tenant_access_token(self) -> str:
         """获取飞书 tenant_access_token"""
@@ -70,12 +118,12 @@ class FeishuClient:
     
     async def create_record(self, table_id: str, fields: Dict) -> Dict:
         """创建记录"""
-        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records"
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records?user_id_type=user_id"
         return await self._request("POST", url, json={"fields": fields})
     
     async def update_record(self, table_id: str, record_id: str, fields: Dict) -> Dict:
         """更新记录"""
-        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}"
+        url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{settings.BASE_ID}/tables/{table_id}/records/{record_id}?user_id_type=user_id"
         return await self._request("PUT", url, json={"fields": fields})
     
     async def delete_record(self, table_id: str, record_id: str) -> Dict:

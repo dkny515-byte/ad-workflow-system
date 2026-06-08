@@ -623,11 +623,11 @@
         // ==================== 数据层 ====================
         const STORAGE_KEY = 'ad_workflow_demo_v3';
         
-        // 人员定义
-        const DESIGNERS = ['S', '太太', '鑫语', '蔡蔡', '巧巧', '祖全', '帅哥'];
-        const OTHER_STAFF = ['Adi', 'DKNY', 'Bianca', '春春', '婉莹', '采薇'];
+        // 人员定义（使用飞书真实昵称）
+        const DESIGNERS = ['S', '態', '文官', 'HaHaHa', '23', 'Rinnsozenn', "d4'afraid"];
+        const OTHER_STAFF = ['Adi Wu', 'DKNY', 'Bianca', '春春', '婉莹', 'anna'];
         const ALL_STAFF = [...DESIGNERS, ...OTHER_STAFF];
-        const REVIEWERS = ['Adi', 'DKNY', '春春']; // 内审员
+        const REVIEWERS = ['Adi Wu', 'DKNY', '春春']; // 内审员
         
         // 客户部门数据（可管理）
         let CUSTOMERS_DATA = [
@@ -1196,7 +1196,7 @@
                 });
             });
             
-            document.getElementById('createForm').addEventListener('submit', function(e) {
+            document.getElementById('createForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const customer = document.getElementById('customer').value;
@@ -1213,7 +1213,6 @@
                 const designer = document.getElementById('designer').value;
                 
                 const order = {
-                    id: generateId(customer, projectName),
                     projectName: projectName,
                     workType: workType,
                     customer: customer,
@@ -1221,39 +1220,31 @@
                     orderPerson: document.getElementById('orderPerson').value,
                     orderDate: document.getElementById('orderDate').value,
                     planDate: document.getElementById('planDate').value,
-                    makeDate: document.getElementById('makeDate').value,
+                    makeDate: document.getElementById('makeDate').value || null,
                     priority: priority,
                     deliverType: document.getElementById('deliverType').value,
                     size: document.getElementById('size').value,
                     quantity: parseInt(document.getElementById('quantity').value) || 1,
                     unit: document.getElementById('unit').value,
                     desc: document.getElementById('desc').value,
-                    driveLink: '',
                     designer: designer,
                     needCopy: needCopy,
                     copywriter: needCopy ? document.getElementById('copywriter').value : '',
-                    copyContent: '',
-                    status: needCopy ? 'pending_copy' : (designer ? 'designing' : 'pending'),
-                    internalStatus: '',
-                    version: 1,
-                    createDate: new Date().toISOString().slice(0, 10),
-                    ae: currentAE,
-                    fonts: [],
-                    materialSource: [],
-                    materialDesc: '',
-                    portrait: '',
-                    designerSubmitted: false,
-                    actualDate: '',
-                    reviewer: document.getElementById('reviewer').value || REVIEWERS[0],
-
+                    reviewer: document.getElementById('reviewer').value || REVIEWERS[0]
                 };
                 
-                orders.push(order);
-                saveData();
-                showToast('工单创建成功！');
-                this.reset();
-                document.querySelectorAll('.radio-group .radio-item:first-child').forEach(item => item.classList.add('selected'));
-                document.getElementById('orderDate').value = today;
+                try {
+                    showToast('正在创建工单...');
+                    const result = await apiPost('/api/orders/', order);
+                    orders.push(result);
+                    showToast('工单创建成功！');
+                    this.reset();
+                    document.querySelectorAll('.radio-group .radio-item:first-child').forEach(item => item.classList.add('selected'));
+                    document.getElementById('orderDate').value = today;
+                    render();
+                } catch (e) {
+                    showToast('创建失败: ' + e.message);
+                }
             });
         }
 
@@ -1807,19 +1798,28 @@
         }
 
         // ==================== 操作函数 ====================
-        window.submitCopy = function(orderId) {
-            const order = orders.find(o => o.id === orderId);
+        window.submitCopy = async function(orderId) {
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
             const content = document.getElementById(`copyContent_${orderId}`)?.value || '';
             if (!content.trim()) {
                 showToast('请先填写文案内容');
                 return;
             }
-            order.copyContent = content;
-            order.status = designer ? 'designing' : 'pending';
-            saveData();
-            showToast('文案已提交，进入设计流程');
-            render();
+            try {
+                const newStatus = order.designer ? 'designing' : 'pending';
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    copyContent: content,
+                    status: newStatus
+                });
+                // 更新本地数据
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast('文案已提交，进入设计流程');
+                render();
+            } catch (e) {
+                showToast('提交失败: ' + e.message);
+            }
         };
 
         window.submitReview = function(orderId) {
@@ -1938,89 +1938,127 @@
                 });
             });
             
-            modal.querySelector('#confirmSubmit').addEventListener('click', function() {
+            modal.querySelector('#confirmSubmit').addEventListener('click', async function() {
                 const materials = Array.from(modal.querySelectorAll('.material-checkbox:checked')).map(cb => cb.value);
                 const portrait = modal.querySelector('#portraitGroup .selected').dataset.value;
                 
-                order.status = 'review';
-                order.internalStatus = 'pending';
-                order.fonts = selectedFonts;
-                order.materialSource = materials;
-                order.materialDesc = modal.querySelector('#materialDesc').value;
-                order.portrait = portrait;
-                order.designerSubmitted = true;
-                
-                saveData();
-                modal.remove();
-                showToast('已提交内审，等待审核');
-                render();
+                try {
+                    const result = await apiPut(`/api/orders/${order.recordId}`, {
+                        status: 'review',
+                        fonts: selectedFonts,
+                        materialSource: materials,
+                        materialDesc: modal.querySelector('#materialDesc').value,
+                        portrait: portrait,
+                        designerSubmitted: true
+                    });
+                    const idx = orders.findIndex(o => o.recordId === order.recordId);
+                    if (idx >= 0) orders[idx] = result;
+                    modal.remove();
+                    showToast('已提交内审，等待审核');
+                    render();
+                } catch (e) {
+                    showToast('提交失败: ' + e.message);
+                }
             });
         };
 
-        window.passReview = function(orderId) {
-            const order = orders.find(o => o.id === orderId);
+        window.passReview = async function(orderId) {
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
-            order.status = 'client';
-            order.internalStatus = 'approved';
-            saveData();
-            showToast(`内审通过，已通知AE ${order.ae} 提交客户`);
-            render();
+            try {
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    status: 'client',
+                    internalStatus: 'approved'
+                });
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast(`内审通过，已通知AE ${order.ae} 提交客户`);
+                render();
+            } catch (e) {
+                showToast('操作失败: ' + e.message);
+            }
         };
 
-        window.exemptReview = function(orderId) {
-            const order = orders.find(o => o.id === orderId);
+        window.exemptReview = async function(orderId) {
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
-            order.status = 'client';
-            order.internalStatus = 'exempt';
-            saveData();
-            showToast(`免审通过，已通知AE ${order.ae} 提交客户`);
-            render();
+            try {
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    status: 'client',
+                    internalStatus: 'exempt'
+                });
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast(`免审通过，已通知AE ${order.ae} 提交客户`);
+                render();
+            } catch (e) {
+                showToast('操作失败: ' + e.message);
+            }
         };
 
-        window.rejectReview = function(orderId) {
+        window.rejectReview = async function(orderId) {
             const comment = prompt('请输入修改意见：');
             if (!comment) return;
             
-            const order = orders.find(o => o.id === orderId);
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
-            order.status = 'designing';
-            order.internalStatus = 'revising';
-            saveData();
-            showToast(`已退回修改，通知设计师 ${order.designer}`);
-            render();
+            try {
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    status: 'designing',
+                    internalStatus: 'revising'
+                });
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast(`已退回修改，通知设计师 ${order.designer}`);
+                render();
+            } catch (e) {
+                showToast('操作失败: ' + e.message);
+            }
         };
 
-        window.clientConfirm = function(orderId) {
-            const order = orders.find(o => o.id === orderId);
+        window.clientConfirm = async function(orderId) {
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
             
             // 弹出填写交付物链接
             const link = prompt('请填写交付物网盘链接（归档用）：', order.driveLink);
             if (link === null) return; // 用户取消
             
-            order.driveLink = link || order.driveLink;
-            order.status = 'done';
-            order.actualDate = new Date().toISOString().slice(0, 10);
-            saveData();
-            showToast('已确认正稿交付，流程完结');
-            render();
+            try {
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    status: 'done',
+                    driveLink: link || order.driveLink
+                });
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast('已确认正稿交付，流程完结');
+                render();
+            } catch (e) {
+                showToast('操作失败: ' + e.message);
+            }
         };
 
-        window.clientRevise = function(orderId) {
+        window.clientRevise = async function(orderId) {
             const comment = prompt('请输入客户修改意见：');
             if (!comment) return;
             
-            const order = orders.find(o => o.id === orderId);
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
-            order.status = 'revise';
-            order.version += 1;
-            saveData();
-            showToast(`客户要求修改，版本升至 v${order.version}`);
-            render();
+            try {
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    status: 'revise'
+                });
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast(`客户要求修改，版本升至 v${result.version}`);
+                render();
+            } catch (e) {
+                showToast('操作失败: ' + e.message);
+            }
         };
 
-        window.changeDesigner = function(orderId) {
-            const order = orders.find(o => o.id === orderId);
+        window.changeDesigner = async function(orderId) {
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
             
             const newDesigner = prompt(`当前设计师：${order.designer}\n请输入新设计师（${DESIGNERS.join('、')}）：`);
@@ -2029,11 +2067,19 @@
                 return;
             }
             
-            order.designer = newDesigner;
-            order.makeDate = new Date().toISOString().slice(0, 10);
-            saveData();
-            showToast(`已更换设计师为 ${newDesigner}`);
-            render();
+            try {
+                const makeDate = new Date().toISOString().slice(0, 10);
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    designer: newDesigner,
+                    makeDate: makeDate
+                });
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast(`已更换设计师为 ${newDesigner}`);
+                render();
+            } catch (e) {
+                showToast('操作失败: ' + e.message);
+            }
         };
 
         // 排班看板拖拽
@@ -2047,30 +2093,48 @@
             event.currentTarget.classList.add('drag-over');
         };
 
-        window.dropCard = function(event, person) {
+        window.dropCard = async function(event, person) {
             event.preventDefault();
             event.currentTarget.classList.remove('drag-over');
             
             const orderId = event.dataTransfer.getData('text/plain');
-            const order = orders.find(o => o.id === orderId);
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
             
             if (person === '待分配') {
-                order.designer = '';
-                order.status = 'pending';
+                try {
+                    const result = await apiPut(`/api/orders/${order.recordId}`, {
+                        designer: '',
+                        status: 'pending'
+                    });
+                    const idx = orders.findIndex(o => o.recordId === order.recordId);
+                    if (idx >= 0) orders[idx] = result;
+                    showToast('已取消分配');
+                    render();
+                } catch (e) {
+                    showToast('操作失败: ' + e.message);
+                }
             } else if (DESIGNERS.includes(person)) {
-                order.designer = person;
-                if (order.status === 'pending') order.status = 'designing';
-                order.makeDate = new Date().toISOString().slice(0, 10);
+                try {
+                    const makeDate = new Date().toISOString().slice(0, 10);
+                    const updates = {
+                        designer: person,
+                        makeDate: makeDate
+                    };
+                    if (order.status === 'pending') updates.status = 'designing';
+                    
+                    const result = await apiPut(`/api/orders/${order.recordId}`, updates);
+                    const idx = orders.findIndex(o => o.recordId === order.recordId);
+                    if (idx >= 0) orders[idx] = result;
+                    showToast('已分配给 ' + person);
+                    render();
+                } catch (e) {
+                    showToast('分配失败: ' + e.message);
+                }
             } else {
-                // 策划/AE人员不能直接分配设计任务
                 showToast('只能分配给设计师');
                 return;
             }
-            
-            saveData();
-            showToast(`已${person === '待分配' ? '取消分配' : '分配给 ' + person}`);
-            render();
         };
 
         // 清除拖拽样式
@@ -2082,7 +2146,7 @@
         });
 
         window.editKanbanOrder = function(orderId) {
-            const order = orders.find(o => o.id === orderId);
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
             
             const modal = document.createElement('div');
@@ -2129,22 +2193,27 @@
             `;
             document.body.appendChild(modal);
             
-            modal.querySelector('#saveEdit').addEventListener('click', function() {
-                order.priority = modal.querySelector('#editPriority').value;
-                order.makeDate = modal.querySelector('#editMakeDate').value;
-
-                order.desc = modal.querySelector('#editDesc').value;
-                order.planDate = modal.querySelector('#editPlanDate').value;
-                
-                saveData();
-                modal.remove();
-                showToast('工单已更新');
-                render();
+            modal.querySelector('#saveEdit').addEventListener('click', async function() {
+                try {
+                    const result = await apiPut(`/api/orders/${order.recordId}`, {
+                        priority: modal.querySelector('#editPriority').value,
+                        makeDate: modal.querySelector('#editMakeDate').value,
+                        desc: modal.querySelector('#editDesc').value,
+                        planDate: modal.querySelector('#editPlanDate').value
+                    });
+                    const idx = orders.findIndex(o => o.recordId === order.recordId);
+                    if (idx >= 0) orders[idx] = result;
+                    modal.remove();
+                    showToast('工单已更新');
+                    render();
+                } catch (e) {
+                    showToast('更新失败: ' + e.message);
+                }
             });
         };
 
-        window.assignFromKanban = function(orderId) {
-            const order = orders.find(o => o.id === orderId);
+        window.assignFromKanban = async function(orderId) {
+            const order = orders.find(o => o.id === orderId || o.recordId === orderId);
             if (!order) return;
             
             const designer = prompt(`为工单【${order.projectName}】分配设计师（${DESIGNERS.join('、')}）：`);
@@ -2153,12 +2222,20 @@
                 return;
             }
             
-            order.designer = designer;
-            order.status = 'designing';
-            order.makeDate = new Date().toISOString().slice(0, 10);
-            saveData();
-            showToast(`已分配给 ${designer}`);
-            render();
+            try {
+                const makeDate = new Date().toISOString().slice(0, 10);
+                const result = await apiPut(`/api/orders/${order.recordId}`, {
+                    designer: designer,
+                    status: 'designing',
+                    makeDate: makeDate
+                });
+                const idx = orders.findIndex(o => o.recordId === order.recordId);
+                if (idx >= 0) orders[idx] = result;
+                showToast(`已分配给 ${designer}`);
+                render();
+            } catch (e) {
+                showToast('分配失败: ' + e.message);
+            }
         };
 
         window.showKanbanEditHelp = function() {
@@ -2272,11 +2349,15 @@
             else if (tab === 'staff') renderAdminStaff();
         };
 
-        window.addCustomer = function() {
-            CUSTOMERS_DATA.push({ name: '新客户', depts: ['默认部门'] });
-            saveData();
-            renderAdminCustomers();
-            showToast('已添加新客户');
+        window.addCustomer = async function() {
+            try {
+                const result = await apiPost('/api/customers/', { name: '新客户', depts: ['默认部门'] });
+                CUSTOMERS_DATA.push({ name: result.name || '新客户', depts: result.depts || ['默认部门'], recordId: result.recordId });
+                renderAdminCustomers();
+                showToast('已添加新客户');
+            } catch (e) {
+                showToast('添加失败: ' + e.message);
+            }
         };
 
         window.updateCustomer = async function(idx, field, value) {
@@ -2298,19 +2379,30 @@
             }
         };
 
-        window.deleteCustomer = function(idx) {
+        window.deleteCustomer = async function(idx) {
             if (!confirm('确定删除该客户？')) return;
-            CUSTOMERS_DATA.splice(idx, 1);
-            saveData();
-            renderAdminCustomers();
-            showToast('已删除');
+            const customer = CUSTOMERS_DATA[idx];
+            try {
+                if (customer.recordId) {
+                    await apiDelete(`/api/customers/${customer.recordId}`);
+                }
+                CUSTOMERS_DATA.splice(idx, 1);
+                renderAdminCustomers();
+                showToast('已删除');
+            } catch (e) {
+                showToast('删除失败: ' + e.message);
+            }
         };
 
-        window.addFont = function() {
-            FONTS_DATA.push('新字体');
-            saveData();
-            renderAdminFonts();
-            showToast('已添加新字体');
+        window.addFont = async function() {
+            try {
+                const result = await apiPost('/api/fonts/', { name: '新字体' });
+                FONTS_DATA.push(result.name || '新字体');
+                renderAdminFonts();
+                showToast('已添加新字体');
+            } catch (e) {
+                showToast('添加失败: ' + e.message);
+            }
         };
 
         window.updateFont = async function(idx, value) {
@@ -2318,12 +2410,15 @@
             // 字体管理通过API保存（需要字体表配置）
         };
 
-        window.deleteFont = function(idx) {
+        window.deleteFont = async function(idx) {
             if (!confirm('确定删除该字体？')) return;
-            FONTS_DATA.splice(idx, 1);
-            saveData();
-            renderAdminFonts();
-            showToast('已删除');
+            try {
+                FONTS_DATA.splice(idx, 1);
+                renderAdminFonts();
+                showToast('已删除');
+            } catch (e) {
+                showToast('删除失败: ' + e.message);
+            }
         };
 
         // ==================== 初始化 ====================

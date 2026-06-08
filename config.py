@@ -15,13 +15,35 @@ class Settings(BaseSettings):
     # 群机器人Webhook
     WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
     
-    # 人员配置（JSON格式）
-    DESIGNERS: str = os.getenv("DESIGNERS", '["S","太太","鑫语","蔡蔡","巧巧","祖全","帅哥"]')
-    OTHER_STAFF: str = os.getenv("OTHER_STAFF", '["Adi","DKNY","Bianca","春春","婉莹","采薇"]')
-    REVIEWERS: str = os.getenv("REVIEWERS", '["Adi","DKNY","春春"]')
+    # 人员配置（JSON格式）— 使用飞书真实昵称，通过环境变量配置
+    DESIGNERS: str = os.getenv("DESIGNERS", "[]")
+    OTHER_STAFF: str = os.getenv("OTHER_STAFF", "[]")
+    REVIEWERS: str = os.getenv("REVIEWERS", "[]")
+    
+    # 人员昵称→飞书用户ID映射（open_id格式），通过环境变量配置
+    USER_ID_MAP: str = os.getenv("USER_ID_MAP", "{}")
+    
+    # 部门ID列表（用于自动同步通讯录），通过环境变量配置
+    DEPT_IDS: str = os.getenv("DEPT_IDS", "[]")
     
     class Config:
         env_file = ".env"
+    
+    def get_user_id_map(self) -> dict:
+        """解析用户ID映射"""
+        import json
+        try:
+            return json.loads(self.USER_ID_MAP)
+        except:
+            return {}
+    
+    def get_dept_ids(self) -> list:
+        """解析部门ID列表"""
+        import json
+        try:
+            return json.loads(self.DEPT_IDS)
+        except:
+            return []
     
     def get_diagnostic(self) -> dict:
         """返回配置诊断信息（隐藏敏感值）"""
@@ -36,6 +58,8 @@ class Settings(BaseSettings):
             "customers_table_configured": bool(self.CUSTOMERS_TABLE_ID),
             "fonts_table_configured": bool(self.FONTS_TABLE_ID),
             "webhook_configured": bool(self.WEBHOOK_URL),
+            "user_id_map_count": len(self.get_user_id_map()),
+            "dept_ids_count": len(self.get_dept_ids()),
         }
 
 settings = Settings()
