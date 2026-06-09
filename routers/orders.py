@@ -157,7 +157,7 @@ def _map_status_from_feishu(status: str) -> str:
     if not status:
         return ""
     clean = _strip_emoji(status.strip())
-    # v5 状态匹配
+    # v5 状态匹配 - 先匹配中文文本
     if clean == '新建':
         return STATUS_NEW
     if '文案' in clean and '确认' not in clean:
@@ -176,6 +176,28 @@ def _map_status_from_feishu(status: str) -> str:
         return STATUS_DONE
     if '取消' in clean:
         return STATUS_CANCELLED
+    
+    # 如果去掉emoji后为空，尝试直接匹配原始值（包含emoji）
+    if not clean:
+        # 直接匹配emoji或完整状态值
+        status_lower = status.lower()
+        if '待文案' in status:
+            return STATUS_PENDING_COPY
+        if '文案待确认' in status:
+            return STATUS_COPY_CONFIRM
+        if '待设计' in status:
+            return STATUS_PENDING_DESIGN
+        if '待内审' in status:
+            return STATUS_PENDING_REVIEW
+        if '需修改' in status or '修改' in status:
+            return STATUS_NEEDS_REVISE
+        if '待客户反馈' in status or '客户' in status:
+            return STATUS_PENDING_CLIENT
+        if '完稿' in status or '交付' in status or '完成' in status:
+            return STATUS_DONE
+        if '取消' in status:
+            return STATUS_CANCELLED
+    
     return clean
 
 def _map_status_to_feishu(status: str) -> str:
