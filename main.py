@@ -46,34 +46,42 @@ async def diagnostic():
         "feishu_connection": feishu_test,
     }
 
-@app.get("/test-person-field")
-async def test_person_field():
-    """测试人员字段格式：读取现有记录中的人员字段数据"""
+@app.get("/test-record-conversion")
+async def test_record_conversion():
+    """测试记录转换函数"""
     try:
         from feishu_client import feishu
         from config import settings
+        from routers.orders import _record_to_order
         
-        # 读取现有记录，看人员字段的实际格式
         records = await feishu.list_records(settings.ORDERS_TABLE_ID)
         
-        # 提取人员字段的原始数据
-        person_samples = []
-        for r in records[:3]:  # 只看前3条
-            fields = r.get("fields", {})
-            for field_name in ["设计师 (人员 )", "AE-创建人", "指定内审员", "前策|文案 (人员 )"]:
-                if field_name in fields and fields[field_name]:
-                    person_samples.append({
-                        "record_id": r.get("record_id"),
-                        "field_name": field_name,
-                        "raw_value": fields[field_name],
-                        "value_type": type(fields[field_name]).__name__
-                    })
+        results = []
+        errors = []
+        for r in records[:5]:  # 只测试前5条
+            try:
+                order = _record_to_order(r)
+                results.append({
+                    "record_id": r.get("record_id"),
+                    "status": "ok",
+                    "project": order.get("projectName")
+                })
+            except Exception as e:
+                import traceback
+                errors.append({
+                    "record_id": r.get("record_id"),
+                    "error": str(e),
+                    "traceback": traceback.format_exc(),
+                    "fields": list(r.get("fields", {}).keys())
+                })
         
         return {
             "status": "ok",
-            "sample_count": len(person_samples),
-            "samples": person_samples,
-            "hint": "如果raw_value是数组且包含{'id': 'ou_xxx'}对象，说明需要ou_xxx格式的ID；如果是纯文本，说明字段是文本类型"
+            "total_tested": len(records[:5]),
+            "success": len(results),
+            "errors": len(errors),
+            "results": results,
+            "error_details": errors
         }
     except Exception as e:
         import traceback
