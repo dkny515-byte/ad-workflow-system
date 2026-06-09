@@ -933,7 +933,7 @@
                         ${order.designer ? `<div>设计师：${order.designer}</div>` : ''}
                         ${order.reviewer ? `<div>内审员：${order.reviewer}</div>` : ''}
                         ${order.internalReviseCount > 0 ? `<div style="color:#f54a45">内部修改：${order.internalReviseCount}次</div>` : ''}
-                        ${order.clientReviseCount > 0 ? `<div style="color:#f59e0b">对客修改：${order.clientReviseCount}次</div>` : ''}
+                        ${order.version > 1 ? `<div style="color:#f59e0b">对客修改：${order.version - 1}次</div>` : ''}
                     </div>
                     ${actions ? `<div class="order-actions">${actions}</div>` : ''}
                 </div>
@@ -1001,7 +1001,7 @@
             try {
                 await apiPut(`/orders/${recordId}`, { 
                     status: STATUS.NEEDS_REVISE, 
-                    clientReviseCount: (order.clientReviseCount || 0) + 1 
+                    version: (order.version || 1) + 1 
                 });
                 showToast('已标记客户要求修改，通知设计师');
                 await loadOrders();

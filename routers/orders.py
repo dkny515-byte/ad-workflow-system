@@ -503,10 +503,7 @@ async def update_order(record_id: str, update: OrderUpdate):
             fields["计划交付日期"] = _date_to_timestamp(str(update.planDate))
         
         if update.driveLink is not None:
-            fields["网盘链接"] = update.driveLink
-        
-        if update.netDiskLink is not None:
-            fields["正稿网盘链接"] = update.netDiskLink
+            fields["链接"] = update.driveLink
         
         if update.fonts is not None:
             fields["使用字体"] = _extract_list(update.fonts)
@@ -528,9 +525,6 @@ async def update_order(record_id: str, update: OrderUpdate):
         
         if update.internalReviseCount is not None:
             fields["内部修改次数"] = update.internalReviseCount
-        
-        if update.clientReviseCount is not None:
-            fields["对客修改次数"] = update.clientReviseCount
         
         if update.reviewHistory is not None:
             fields["内审历史"] = update.reviewHistory
@@ -662,7 +656,7 @@ async def _send_status_notification(old_order: dict, new_order: dict, update: Or
         designer_id = feishu.get_user_id(designer_name) if designer_name else None
         copywriter_name = new_order.get('copywriter', '')
         copywriter_id = feishu.get_user_id(copywriter_name) if copywriter_name else None
-        count = new_order.get('clientReviseCount', 0)
+        count = new_order.get('version', 1) - 1  # 版本号-1 = 对客修改次数（初始版本为1）
         url = _build_form_url('form', 'designer', new_order.get('recordId', ''))
         at_list = []
         if designer_id:
