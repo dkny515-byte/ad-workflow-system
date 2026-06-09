@@ -369,7 +369,24 @@ async def list_orders(
     """查询工单列表"""
     try:
         records = await feishu.list_records(settings.ORDERS_TABLE_ID)
-        orders = [_record_to_order(r) for r in records]
+        
+        # 逐条转换，捕获错误
+        orders = []
+        errors = []
+        for r in records:
+            try:
+                orders.append(_record_to_order(r))
+            except Exception as e:
+                errors.append({
+                    "record_id": r.get("record_id"),
+                    "error": str(e),
+                    "fields": list(r.get("fields", {}).keys())
+                })
+        
+        if errors:
+            print(f"[WARN] list_orders: {len(errors)} records failed to convert")
+            for e in errors[:3]:
+                print(f"  - {e['record_id']}: {e['error']}")
         
         if status:
             orders = [o for o in orders if o["status"] == status]
