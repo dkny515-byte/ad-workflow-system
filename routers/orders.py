@@ -500,11 +500,22 @@ async def list_orders(
 async def get_order(record_id: str):
     """获取单条工单"""
     try:
+        from feishu_client import feishu
+        from config import settings
+        from routers.orders import _record_to_order
+        
         record = await feishu.get_record(settings.ORDERS_TABLE_ID, record_id)
-        return {"raw": record}
+        order = _record_to_order(record)
+        
+        return {
+            "status": "ok",
+            "record_id": record_id,
+            "order": order
+        }
     except Exception as e:
         import traceback
         return {
+            "status": "error",
             "error": str(e),
             "traceback": traceback.format_exc(),
             "record_id": record_id
