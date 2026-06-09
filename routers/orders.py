@@ -501,7 +501,7 @@ async def get_order(record_id: str):
     """获取单条工单"""
     try:
         record = await feishu.get_record(settings.ORDERS_TABLE_ID, record_id)
-        return _record_to_order(record)
+        return {"raw": record}
     except Exception as e:
         import traceback
         return {
