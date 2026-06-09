@@ -201,42 +201,83 @@ def _parse_version(version_str: str) -> int:
 # ========== 记录转换 ==========
 
 def _record_to_order(record: dict) -> dict:
-    fields = record.get("fields", {})
-    return {
-        "recordId": record.get("record_id", ""),
-        "id": _extract_text(fields.get("项目编号", "")),
-        "projectName": _extract_text(fields.get("项目简述", "")),
-        "workType": _extract_text(fields.get("工作性质", "")),
-        "customer": _extract_text(fields.get("客户", "")),
-        "dept": _extract_text(fields.get("部门", "")),
-        "orderPerson": _extract_text(fields.get("下单人", "")),
-        "orderDate": _extract_date(fields.get("下单日期", "")),
-        "planDate": _extract_date(fields.get("计划交付日期", "")),
-        "makeDate": _extract_date(fields.get("制作日期", "")),
-        "priority": _extract_text(fields.get("优先级", "P1")),
-        "deliverType": _extract_text(fields.get("交付物类型", "")),
-        "size": _extract_text(fields.get("规格尺寸", "")),
-        "quantity": fields.get("数量", 1) if isinstance(fields.get("数量"), (int, float)) else 1,
-        "unit": _extract_text(fields.get("单位", "个")),
-        "desc": _extract_text(fields.get("说明", "")),
-        "driveLink": _extract_text(fields.get("网盘链接", "")),
-        "designer": _extract_user(fields.get("设计师 (人员 )", "")),
-        "needCopy": _extract_text(fields.get("需要前策|文案", "否")) == "是",
-        "copywriter": _extract_user(fields.get("前策|文案 (人员 )", "")),
-        "status": _map_status_from_feishu(_extract_text(fields.get("进度状态", ""))),
-        "version": fields.get("版本号", 1) if isinstance(fields.get("版本号"), (int, float)) else _parse_version(_extract_text(fields.get("版本号", "v1"))),
-        "createDate": _extract_date(fields.get("下单日期", "")),
-        "ae": _extract_user(fields.get("AE-创建人", "")),
-        "fonts": _extract_list(fields.get("使用字体", [])),
-        "materialSource": _extract_list(fields.get("素材来源", [])),
-        "materialDesc": _extract_text(fields.get("素材说明", "")),
-        "portrait": _extract_option(fields.get("肖像权", "")),
-        "designerSubmitted": _extract_text(fields.get("设计师提交", "")) == "是",
-        "reviewer": _extract_user(fields.get("指定内审员", "")),
-        # v5 新增字段
-        "internalReviseCount": fields.get("内部修改次数", 0) if isinstance(fields.get("内部修改次数"), (int, float)) else 0,
-        "reviewHistory": _extract_text(fields.get("内审历史", "")),
-    }
+    """将飞书记录转换为系统订单格式"""
+    try:
+        fields = record.get("fields", {})
+        return {
+            "recordId": record.get("record_id", ""),
+            "id": _extract_text(fields.get("项目编号", "")),
+            "projectName": _extract_text(fields.get("项目简述", "")),
+            "workType": _extract_text(fields.get("工作性质", "")),
+            "customer": _extract_text(fields.get("客户", "")),
+            "dept": _extract_text(fields.get("部门", "")),
+            "orderPerson": _extract_text(fields.get("下单人", "")),
+            "orderDate": _extract_date(fields.get("下单日期", "")),
+            "planDate": _extract_date(fields.get("计划交付日期", "")),
+            "makeDate": _extract_date(fields.get("制作日期", "")),
+            "priority": _extract_text(fields.get("优先级", "P1")),
+            "deliverType": _extract_text(fields.get("交付物类型", "")),
+            "size": _extract_text(fields.get("规格尺寸", "")),
+            "quantity": fields.get("数量", 1) if isinstance(fields.get("数量"), (int, float)) else 1,
+            "unit": _extract_text(fields.get("单位", "个")),
+            "desc": _extract_text(fields.get("说明", "")),
+            "driveLink": _extract_text(fields.get("网盘链接", "")),
+            "designer": _extract_user(fields.get("设计师 (人员 )", "")),
+            "needCopy": _extract_text(fields.get("需要前策|文案", "否")) == "是",
+            "copywriter": _extract_user(fields.get("前策|文案 (人员 )", "")),
+            "status": _map_status_from_feishu(_extract_text(fields.get("进度状态", ""))),
+            "version": fields.get("版本号", 1) if isinstance(fields.get("版本号"), (int, float)) else _parse_version(_extract_text(fields.get("版本号", "v1"))),
+            "createDate": _extract_date(fields.get("下单日期", "")),
+            "ae": _extract_user(fields.get("AE-创建人", "")),
+            "fonts": _extract_list(fields.get("使用字体", [])),
+            "materialSource": _extract_list(fields.get("素材来源", [])),
+            "materialDesc": _extract_text(fields.get("素材说明", "")),
+            "portrait": _extract_option(fields.get("肖像权", "")),
+            "designerSubmitted": _extract_text(fields.get("设计师提交", "")) == "是",
+            "reviewer": _extract_user(fields.get("指定内审员", "")),
+            # v5 新增字段
+            "internalReviseCount": fields.get("内部修改次数", 0) if isinstance(fields.get("内部修改次数"), (int, float)) else 0,
+            "reviewHistory": _extract_text(fields.get("内审历史", "")),
+        }
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] _record_to_order failed for record {record.get('record_id')}: {str(e)}")
+        print(traceback.format_exc())
+        # 返回一个最小化的订单对象，避免整个API失败
+        return {
+            "recordId": record.get("record_id", ""),
+            "id": "ERROR",
+            "projectName": f"转换错误: {str(e)[:50]}",
+            "workType": "",
+            "customer": "",
+            "dept": "",
+            "orderPerson": "",
+            "orderDate": "",
+            "planDate": "",
+            "makeDate": "",
+            "priority": "P1",
+            "deliverType": "",
+            "size": "",
+            "quantity": 1,
+            "unit": "个",
+            "desc": "",
+            "driveLink": "",
+            "designer": "",
+            "needCopy": False,
+            "copywriter": "",
+            "status": "",
+            "version": 1,
+            "createDate": "",
+            "ae": "",
+            "fonts": [],
+            "materialSource": [],
+            "materialDesc": "",
+            "portrait": "",
+            "designerSubmitted": False,
+            "reviewer": "",
+            "internalReviseCount": 0,
+            "reviewHistory": "",
+        }
 
 def _date_to_timestamp(date_str: str) -> int:
     if not date_str:
