@@ -428,6 +428,9 @@ async def update_order(record_id: str, update: OrderUpdate):
         if update.designer is not None:
             fields["设计师 (人员 )"] = feishu.get_user_field_value(update.designer)
         
+        if update.reviewer is not None:
+            fields["指定内审员"] = feishu.get_user_field_value(update.reviewer)
+        
         if update.makeDate is not None:
             fields["制作日期"] = _date_to_timestamp(str(update.makeDate))
         
@@ -483,11 +486,14 @@ async def update_order(record_id: str, update: OrderUpdate):
             
             if update.status == 'review':
                 # 设计师提交内审 → @内审员
-                reviewer_name = current_order.get('reviewer', '')
+                # 优先使用前端传入的reviewer，其次用当前记录中的reviewer
+                reviewer_name = update.reviewer if (update.reviewer is not None) else current_order.get('reviewer', '')
                 reviewer_id = feishu.get_user_id(reviewer_name) if reviewer_name else None
                 at_user_id = reviewer_id
-                notify_text = (f"⭕️ 待内审\n项目：{current_order.get('projectName')}\n"
-                              f"设计师：{current_order.get('designer', '未分配')}\n"
+                notify_text = (f"⭕️ 待内审\n"
+                              f"项目：{current_order.get('projectName')}\n"
+                              f"客户：{current_order.get('customer')} · {current_order.get('dept', '')}\n"
+                              f"交付物：{current_order.get('deliverType', '-')} {current_order.get('size', '')}\n"
                               f"请尽快审核")
                 title = "⭕️ 工单待内审"
                 
