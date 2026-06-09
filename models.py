@@ -36,9 +36,7 @@ class OrderUpdate(BaseModel):
     materialSource: Optional[List[str]] = None
     materialDesc: Optional[str] = None
     portrait: Optional[str] = None
-    copyContent: Optional[str] = None
     designerSubmitted: Optional[bool] = None
-    actualDate: Optional[date] = None
     # v5新增
     internalReviseCount: Optional[int] = None
     reviewHistory: Optional[str] = None  # JSON字符串
@@ -64,7 +62,6 @@ class OrderResponse(BaseModel):
     designer: Optional[str]
     needCopy: bool
     copywriter: Optional[str]
-    copyContent: Optional[str]
     status: str
     internalStatus: Optional[str]
     version: int
@@ -75,7 +72,6 @@ class OrderResponse(BaseModel):
     materialDesc: Optional[str]
     portrait: Optional[str]
     designerSubmitted: bool
-    actualDate: Optional[str]
     reviewer: Optional[str]
     # v5新增
     internalReviseCount: int

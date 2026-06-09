@@ -466,8 +466,9 @@
                     <div class="readonly-field" style="margin-top:8px">客户：${order.customer} · ${order.dept||'-'}</div>
                     <div class="readonly-field" style="margin-top:8px">文案：${order.copywriter||'-'}</div>
                     
-                    <div class="section-title">✍️ 文案内容</div>
-                    <div class="readonly-field" style="min-height:100px;white-space:pre-wrap">${order.copyContent||'（文案尚未填写）'}</div>
+                    <div class="section-title">✍️ 文案状态</div>
+                    <div class="readonly-field">文案人员：${order.copywriter||'-'}</div>
+                    <div class="readonly-field" style="margin-top:8px">状态：${order.status===STATUS.COPY_CONFIRM?'已提交，等待确认':'待撰写'}</div>
                     
                     <div class="section-title">📝 操作</div>
                     <div style="display:flex;gap:12px">
@@ -951,21 +952,19 @@
                 <div class="modal">
                     <div class="modal-header"><h3>提交文案：${order.projectName}</h3><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button></div>
                     <div class="modal-body">
-                        <div class="form-group"><label class="form-label">文案内容</label><textarea id="copyContentInput" placeholder="输入文案内容"></textarea></div>
+                        <div class="form-group"><label class="form-label">确认提交文案？</label><div class="readonly-field">项目：【${order.workType}】${order.projectName}</div></div>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
-                        <button class="btn btn-primary" id="confirmCopySubmit">提交文案</button>
+                        <button class="btn btn-primary" id="confirmCopySubmit">确认提交文案</button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
             
             modal.querySelector('#confirmCopySubmit').addEventListener('click', async function() {
-                const content = document.getElementById('copyContentInput').value;
-                if (!content) { showToast('请填写文案内容'); return; }
                 try {
-                    await apiPut(`/orders/${recordId}`, { status: STATUS.COPY_CONFIRM, copyContent: content });
+                    await apiPut(`/orders/${recordId}`, { status: STATUS.COPY_CONFIRM });
                     showToast('文案已提交，等待AE确认');
                     modal.remove();
                     await loadOrders();
