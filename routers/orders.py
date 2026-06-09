@@ -575,10 +575,14 @@ async def create_order(order: OrderCreate):
         print(f"[ERROR] create_order: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/{record_id}", response_model=OrderResponse)
+@router.put("/{record_id}")
 async def update_order(record_id: str, update: OrderUpdate):
     """更新工单 - v5状态机"""
     try:
+        from feishu_client import feishu
+        from config import settings
+        from routers.orders import _record_to_order, _validate_status_transition, _map_status_to_feishu, _date_to_timestamp, _extract_list, _send_status_notification
+        
         current = await feishu.get_record(settings.ORDERS_TABLE_ID, record_id)
         current_order = _record_to_order(current)
         current_status = current_order.get("status", STATUS_NEW)
@@ -656,8 +660,11 @@ async def update_order(record_id: str, update: OrderUpdate):
         raise
     except Exception as e:
         import traceback
-        print(f"[ERROR] update_order: {str(e)}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "record_id": record_id
+        }
 
 async def _send_status_notification(old_order: dict, new_order: dict, update: OrderUpdate):
     """发送状态变更通知"""
