@@ -382,7 +382,7 @@
         
         async function loadOrders() {
             try {
-                orders = await apiGet('/orders?active=true');
+                orders = await apiGet('/orders/?active=true');
             } catch(e) {
                 showToast('加载数据失败: ' + e.message);
                 orders = [];
