@@ -39,6 +39,11 @@ class OrderUpdate(BaseModel):
     copyContent: Optional[str] = None
     designerSubmitted: Optional[bool] = None
     actualDate: Optional[date] = None
+    # v5新增
+    netDiskLink: Optional[str] = None
+    internalReviseCount: Optional[int] = None
+    clientReviseCount: Optional[int] = None
+    reviewHistory: Optional[str] = None  # JSON字符串
 
 class OrderResponse(BaseModel):
     recordId: str
@@ -74,6 +79,11 @@ class OrderResponse(BaseModel):
     designerSubmitted: bool
     actualDate: Optional[str]
     reviewer: Optional[str]
+    # v5新增
+    netDiskLink: Optional[str]
+    internalReviseCount: int
+    clientReviseCount: int
+    reviewHistory: Optional[str]
 
 class CustomerCreate(BaseModel):
     name: str

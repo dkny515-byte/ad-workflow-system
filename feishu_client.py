@@ -181,6 +181,19 @@ class FeishuClient:
         except Exception as e:
             print(f"Webhook发送失败: {e}")
             return False
+    
+    async def send_webhook_raw(self, post_data: dict) -> bool:
+        """发送原始Post消息数据（支持更复杂的格式）"""
+        if not settings.WEBHOOK_URL:
+            return False
+            
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(settings.WEBHOOK_URL, json=post_data)
+                return resp.status_code == 200
+        except Exception as e:
+            print(f"Webhook发送失败: {e}")
+            return False
 
 # 全局客户端实例
 feishu = FeishuClient()
