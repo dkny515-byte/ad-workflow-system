@@ -183,6 +183,47 @@ async def debug_all_records():
             "traceback": traceback.format_exc()
         }
 
+@app.get("/test-orders")
+async def test_orders():
+    """测试订单列表"""
+    try:
+        from feishu_client import feishu
+        from config import settings
+        from routers.orders import _record_to_order
+        
+        records = await feishu.list_records(settings.ORDERS_TABLE_ID)
+        
+        results = []
+        errors = []
+        for r in records[:3]:
+            try:
+                order = _record_to_order(r)
+                results.append({"record_id": r.get("record_id"), "status": "ok", "project": order.get("projectName")})
+            except Exception as e:
+                import traceback
+                errors.append({
+                    "record_id": r.get("record_id"),
+                    "error": str(e),
+                    "traceback": traceback.format_exc()
+                })
+        
+        return {
+            "status": "ok",
+            "total_records": len(records),
+            "tested": len(records[:3]),
+            "success": len(results),
+            "errors": len(errors),
+            "results": results,
+            "error_details": errors
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # API路由（必须在静态文件挂载之前）
 app.include_router(orders.router, prefix="/api/orders", tags=["工单"])
 app.include_router(customers.router, prefix="/api/customers", tags=["客户"])
