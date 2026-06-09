@@ -81,6 +81,7 @@ def _strip_emoji(text: str) -> str:
         "\U0001F900-\U0001F9FF"
         "\U00002600-\U000026FF"
         "\U00002700-\U000027BF"
+        "\U0001F7E0-\U0001F7FF"  # 几何图形扩展（🟢🟣🟠等）
         "]+",
         flags=re.UNICODE,
     )
