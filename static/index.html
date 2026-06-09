@@ -1010,6 +1010,9 @@
         
         // ==================== 排班看板 ====================
         function renderKanban(c) {
+            const now = new Date();
+            const filterDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            
             const allPeople = ['待分配', ...ALL_STAFF];
             const peopleGroups = {};
             allPeople.forEach(p => peopleGroups[p] = []);
@@ -1034,7 +1037,17 @@
             const priorityOrder = { 'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3, '可能来': 4, '当天新增': 5 };
             
             c.innerHTML = `
-                <div class="kanban-board">
+                <div class="kanban-filter-bar" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                    <input type="date" id="kanbanFilterDate" value="${filterDate}" style="min-width:140px;padding:8px 12px;border:1px solid #d0d3d6;border-radius:6px">
+                    <select id="kanbanFilterPriority" style="min-width:120px;padding:8px 12px;border:1px solid #d0d3d6;border-radius:6px">
+                        <option value="">全部优先级</option>
+                        <option value="P0">P0</option>
+                        <option value="P1">P1</option>
+                        <option value="P2">P2</option>
+                    </select>
+                    <input type="text" id="kanbanSearch" placeholder="搜索项目..." style="min-width:200px;padding:8px 12px;border:1px solid #d0d3d6;border-radius:6px">
+                </div>
+                <div class="kanban-board" id="kanbanBoard">
                     ${allPeople.map(person => {
                         let personOrders = peopleGroups[person] || [];
                         personOrders.sort((a, b) => {
@@ -1087,29 +1100,150 @@
         }
         
         // ==================== AE汇总 ====================
+        let summaryColumnVisibility = {
+            projectId: true, projectName: true, customer: true, dept: true,
+            workType: true, priority: true, designer: true, copywriter: true,
+            status: true, planDate: true, makeDate: true, driveLink: true,
+            internalReviseCount: false, version: false
+        };
+        
         function renderSummary(c) {
             const activeOrders = orders.filter(o => o.status !== STATUS.DONE && o.status !== STATUS.CANCELLED);
             const doneOrders = orders.filter(o => o.status === STATUS.DONE);
+            const allCustomers = [...new Set(orders.map(o => o.customer).filter(Boolean))].sort();
+            
+            const columns = [
+                { key: 'projectId', label: '项目编号', width: '100px' },
+                { key: 'projectName', label: '项目简述', width: '200px' },
+                { key: 'customer', label: '客户', width: '100px' },
+                { key: 'dept', label: '部门', width: '100px' },
+                { key: 'workType', label: '工作性质', width: '80px' },
+                { key: 'priority', label: '优先级', width: '70px' },
+                { key: 'designer', label: '设计师', width: '80px' },
+                { key: 'copywriter', label: '文案', width: '80px' },
+                { key: 'status', label: '进度状态', width: '90px' },
+                { key: 'planDate', label: '计划交付', width: '100px' },
+                { key: 'makeDate', label: '制作日期', width: '100px' },
+                { key: 'driveLink', label: '网盘链接', width: '120px' },
+                { key: 'internalReviseCount', label: '内修次数', width: '70px' },
+                { key: 'version', label: '版本号', width: '70px' }
+            ];
+            
+            const renderTable = (data, title) => {
+                if (data.length === 0) return '';
+                const visibleCols = columns.filter(col => summaryColumnVisibility[col.key]);
+                return `
+                    <div class="card" style="margin-bottom:16px">
+                        <div class="card-title">${title} (${data.length})</div>
+                        <div style="overflow-x:auto">
+                            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                                <thead>
+                                    <tr style="background:#f2f3f5">
+                                        ${visibleCols.map(col => `<th style="padding:8px 12px;text-align:left;font-weight:500;color:#646a73;border-bottom:1px solid #e5e6eb;white-space:nowrap;width:${col.width}">${col.label}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.map(order => `
+                                        <tr style="border-bottom:1px solid #e5e6eb">
+                                            ${visibleCols.map(col => {
+                                                let val = order[col.key] || '-';
+                                                if (col.key === 'status') val = STATUS_LABELS[val] || val;
+                                                if (col.key === 'priority') {
+                                                    const color = priorityColors[val] || '#8f959e';
+                                                    return `<td style="padding:8px 12px;white-space:nowrap"><span style="background:${color}15;color:${color};padding:2px 8px;border-radius:4px;font-size:12px">${val}</span></td>`;
+                                                }
+                                                if (col.key === 'driveLink' && val !== '-') {
+                                                    return `<td style="padding:8px 12px;white-space:nowrap"><a href="${val}" target="_blank" style="color:#3370ff;text-decoration:none">打开链接</a></td>`;
+                                                }
+                                                return `<td style="padding:8px 12px;white-space:nowrap">${val}</td>`;
+                                            }).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            };
             
             c.innerHTML = `
-                <div class="card">
-                    <div class="card-title">📊 工单汇总</div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px">
-                        ${Object.entries(STATUS_LABELS).map(([k,v]) => {
-                            const count = orders.filter(o => o.status === k).length;
-                            return `<div style="text-align:center;padding:12px;background:#f2f3f5;border-radius:8px"><div style="font-size:24px;font-weight:600;color:#3370ff">${count}</div><div style="font-size:12px;color:#646a73;margin-top:4px">${v}</div></div>`;
-                        }).join('')}
+                <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+                    <select id="summaryCustomerFilter" style="min-width:140px;padding:8px 12px;border:1px solid #d0d3d6;border-radius:6px">
+                        <option value="">全部客户</option>
+                        ${allCustomers.map(c => `<option value="${c}">${c}</option>`).join('')}
+                    </select>
+                    <button onclick="toggleColumnPanel()" style="padding:8px 16px;background:#fff;border:1px solid #d0d3d6;border-radius:6px;cursor:pointer">显示/隐藏列</button>
+                    <button onclick="exportSummaryExcel()" style="padding:8px 16px;background:#3370ff;color:#fff;border:none;border-radius:6px;cursor:pointer">导出Excel</button>
+                </div>
+                <div id="columnPanel" style="display:none;margin-bottom:16px;padding:12px;background:#f2f3f5;border-radius:8px">
+                    <div style="display:flex;gap:12px;flex-wrap:wrap">
+                        ${columns.map(col => `
+                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px">
+                                <input type="checkbox" ${summaryColumnVisibility[col.key]?'checked':''} onchange="toggleColumn('${col.key}')">
+                                ${col.label}
+                            </label>
+                        `).join('')}
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-title">📋 进行中工单 (${activeOrders.length})</div>
-                    ${activeOrders.map(order => renderOrderCard(order, 'ae')).join('')}
-                </div>
-                <div class="card">
-                    <div class="card-title">✅ 已完稿工单 (${doneOrders.length})</div>
-                    ${doneOrders.map(order => renderOrderCard(order, 'ae')).join('')}
-                </div>
+                ${renderTable(activeOrders, '📋 进行中工单')}
+                ${renderTable(doneOrders, '✅ 已完稿工单')}
             `;
+            
+            // 绑定筛选事件
+            setTimeout(() => {
+                const filter = document.getElementById('summaryCustomerFilter');
+                if (filter) {
+                    filter.addEventListener('change', () => {
+                        const customer = filter.value;
+                        const filtered = customer ? orders.filter(o => o.customer === customer) : orders;
+                        const fActive = filtered.filter(o => o.status !== STATUS.DONE && o.status !== STATUS.CANCELLED);
+                        const fDone = filtered.filter(o => o.status === STATUS.DONE);
+                        // 重新渲染表格部分
+                        const container = c.querySelectorAll('.card');
+                        if (container.length >= 2) {
+                            container[container.length-2].outerHTML = renderTable(fActive, '📋 进行中工单');
+                            container[container.length-1].outerHTML = renderTable(fDone, '✅ 已完稿工单');
+                        }
+                    });
+                }
+            }, 0);
+        }
+        
+        function toggleColumnPanel() {
+            const panel = document.getElementById('columnPanel');
+            if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function toggleColumn(key) {
+            summaryColumnVisibility[key] = !summaryColumnVisibility[key];
+            renderSummary(document.getElementById('tab-ae'));
+        }
+        
+        function exportSummaryExcel() {
+            const customer = document.getElementById('summaryCustomerFilter')?.value || '';
+            const data = customer ? orders.filter(o => o.customer === customer) : orders;
+            
+            const headers = ['项目编号','项目简述','客户','部门','工作性质','优先级','设计师','文案','进度状态','计划交付','制作日期','网盘链接','内修次数','版本号'];
+            const rows = data.map(o => [
+                o.projectId, o.projectName, o.customer, o.dept, o.workType, o.priority,
+                STATUS_LABELS[o.status] || o.status, o.designer, o.copywriter,
+                o.planDate, o.makeDate, o.driveLink, o.internalReviseCount, o.version
+            ]);
+            
+            let csv = '\uFEFF' + headers.join(',') + '\n';
+            rows.forEach(row => {
+                csv += row.map(v => {
+                    v = String(v || '');
+                    if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v.replace(/"/g, '""') + '"';
+                    return v;
+                }).join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `工单汇总_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
         }
         
         // ==================== 基础数据 ====================
