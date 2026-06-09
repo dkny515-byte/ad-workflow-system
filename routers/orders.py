@@ -219,7 +219,7 @@ def _record_to_order(record: dict) -> dict:
         "quantity": fields.get("数量", 1) if isinstance(fields.get("数量"), (int, float)) else 1,
         "unit": _extract_text(fields.get("单位", "个")),
         "desc": _extract_text(fields.get("说明", "")),
-        "driveLink": _extract_text(fields.get("网盘链接", "")),
+        "driveLink": _extract_text(fields.get("链接", "")),
         "designer": _extract_user(fields.get("设计师 (人员 )", "")),
         "needCopy": _extract_text(fields.get("需要前策|文案", "否")) == "是",
         "copywriter": _extract_user(fields.get("前策|文案 (人员 )", "")),
@@ -236,9 +236,7 @@ def _record_to_order(record: dict) -> dict:
         "actualDate": _extract_date(fields.get("实际交付日期", "")),
         "reviewer": _extract_user(fields.get("指定内审员", "")),
         # v5 新增字段
-        "netDiskLink": _extract_text(fields.get("正稿网盘链接", "")),
         "internalReviseCount": fields.get("内部修改次数", 0) if isinstance(fields.get("内部修改次数"), (int, float)) else 0,
-        "clientReviseCount": fields.get("对客修改次数", 0) if isinstance(fields.get("对客修改次数"), (int, float)) else 0,
         "reviewHistory": _extract_text(fields.get("内审历史", "")),
     }
 
@@ -268,7 +266,7 @@ def _order_to_fields(order: dict) -> dict:
         "数量": order.get("quantity", 1),
         "单位": order.get("unit", "个"),
         "说明": order.get("desc", ""),
-        "网盘链接": order.get("driveLink", ""),
+        "链接": order.get("driveLink", ""),
         "设计师": feishu.get_user_field_value(order.get("designer", "")),
         "需要前策|文案": "是" if order.get("needCopy") else "否",
         "前策|文案 (人员 )": feishu.get_user_field_value(order.get("copywriter", "")),
@@ -284,9 +282,7 @@ def _order_to_fields(order: dict) -> dict:
         "设计师提交": "是" if order.get("designerSubmitted") else "否",
         "实际交付日期": _date_to_timestamp(order.get("actualDate", "")) if order.get("actualDate") else None,
         # v5 新增
-        "正稿网盘链接": order.get("netDiskLink", ""),
         "内部修改次数": order.get("internalReviseCount", 0),
-        "对客修改次数": order.get("clientReviseCount", 0),
         "内审历史": order.get("reviewHistory", ""),
     }
     return {k: v for k, v in fields.items() if v is not None and v != "" and v != []}
