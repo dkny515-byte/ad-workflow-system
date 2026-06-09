@@ -249,7 +249,26 @@ async def test_orders():
             "traceback": traceback.format_exc()
         }
 
-# API路由（必须在静态文件挂载之前）
+@app.get("/test-orders-v2")
+async def test_orders_v2():
+    """测试订单列表 - 直接调用list_orders"""
+    try:
+        from routers.orders import list_orders
+        
+        result = await list_orders()
+        
+        return {
+            "status": "ok",
+            "result_count": len(result),
+            "first_item": result[0] if result else None
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 app.include_router(orders.router, prefix="/api/orders", tags=["工单"])
 app.include_router(customers.router, prefix="/api/customers", tags=["客户"])
 app.include_router(fonts.router, prefix="/api/fonts", tags=["字体"])
