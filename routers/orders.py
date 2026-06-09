@@ -397,7 +397,7 @@ def _build_webhook_post(title: str, content_lines: list, at_users: list = None, 
 
 # ========== API 路由 ==========
 
-@router.get("/", response_model=List[OrderResponse])
+@router.get("/")
 async def list_orders(
     status: Optional[str] = None,
     customer: Optional[str] = None,
