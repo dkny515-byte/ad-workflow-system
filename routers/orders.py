@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional
 from datetime import datetime
 import re
@@ -576,74 +576,78 @@ async def create_order(order: OrderCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{record_id}")
-async def update_order(record_id: str, update: OrderUpdate):
+async def update_order(record_id: str, request: Request):
     """更新工单 - v5状态机"""
     try:
         from feishu_client import feishu
         from config import settings
         from routers.orders import _record_to_order, _validate_status_transition, _map_status_to_feishu, _date_to_timestamp, _extract_list, _send_status_notification
         
+        body = await request.json()
+        
         current = await feishu.get_record(settings.ORDERS_TABLE_ID, record_id)
         current_order = _record_to_order(current)
         current_status = current_order.get("status", STATUS_NEW)
         
+        new_status = body.get("status")
+        
         # 状态机校验
-        if update.status is not None and update.status != current_status:
-            if not _validate_status_transition(current_status, update.status):
+        if new_status is not None and new_status != current_status:
+            if not _validate_status_transition(current_status, new_status):
                 raise HTTPException(
                     status_code=400, 
-                    detail=f"非法状态流转: {STATUS_LABELS.get(current_status, current_status)} → {STATUS_LABELS.get(update.status, update.status)}"
+                    detail=f"非法状态流转: {STATUS_LABELS.get(current_status, current_status)} → {STATUS_LABELS.get(new_status, new_status)}"
                 )
         
         fields = {}
         
-        if update.status is not None:
-            fields["进度状态"] = _map_status_to_feishu(update.status)
+        if "status" in body:
+            fields["进度状态"] = _map_status_to_feishu(body["status"])
         
-        if update.designer is not None:
-            fields["设计师"] = feishu.get_user_field_value(update.designer)
+        if "designer" in body:
+            fields["设计师"] = feishu.get_user_field_value(body["designer"])
         
-        if update.copywriter is not None:
-            fields["前策|文案 (人员 )"] = feishu.get_user_field_value(update.copywriter)
+        if "copywriter" in body:
+            fields["前策|文案 (人员 )"] = feishu.get_user_field_value(body["copywriter"])
         
-        if update.reviewer is not None:
-            fields["指定内审员"] = feishu.get_user_field_value(update.reviewer)
+        if "reviewer" in body:
+            fields["指定内审员"] = feishu.get_user_field_value(body["reviewer"])
         
-        if update.makeDate is not None:
-            fields["制作日期"] = _date_to_timestamp(str(update.makeDate))
+        if "makeDate" in body and body["makeDate"]:
+            fields["制作日期"] = _date_to_timestamp(str(body["makeDate"]))
         
-        if update.priority is not None:
-            fields["优先级"] = update.priority
+        if "priority" in body:
+            fields["优先级"] = body["priority"]
         
-        if update.desc is not None:
-            fields["说明"] = update.desc
+        if "desc" in body:
+            fields["说明"] = body["desc"]
         
-        if update.planDate is not None:
-            fields["计划交付日期"] = _date_to_timestamp(str(update.planDate))
+        if "planDate" in body and body["planDate"]:
+            fields["计划交付日期"] = _date_to_timestamp(str(body["planDate"]))
         
-        if update.driveLink is not None:
-            fields["链接"] = update.driveLink
+        if "driveLink" in body:
+            fields["链接"] = body["driveLink"]
         
-        if update.fonts is not None:
-            fields["使用字体"] = _extract_list(update.fonts)
+        if "fonts" in body:
+            fields["使用字体"] = _extract_list(body["fonts"])
         
-        if update.materialSource is not None:
-            fields["素材来源"] = _extract_list(update.materialSource)
+        if "materialSource" in body:
+            fields["素材来源"] = _extract_list(body["materialSource"])
         
-        if update.materialDesc is not None:
-            fields["素材说明"] = update.materialDesc
+        if "materialDesc" in body:
+            fields["素材说明"] = body["materialDesc"]
         
-        if update.portrait is not None:
-            fields["肖像权"] = update.portrait
+        if "portrait" in body:
+            fields["肖像权"] = body["portrait"]
         
-        if update.designerSubmitted is not None:
-            fields["设计师提交"] = True if update.designerSubmitted else False
+        if "designerSubmitted" in body:
+            fields["设计师提交"] = True if body["designerSubmitted"] else False
         
-        if update.internalReviseCount is not None:
-            fields["内部修改次数"] = update.internalReviseCount
+        if "internalReviseCount" in body:
+            fields["内部修改次数"] = body["internalReviseCount"]
         
-        if update.reviewHistory is not None:
-            fields["内审历史"] = update.reviewHistory
+        if "reviewHistory" in body:
+            fields["内审历史"] = body["reviewHistory"]
         
         # 过滤空值（但保留0和False）
         fields = {k: v for k, v in fields.items() if v is not None and v != "" and v != []}
@@ -652,8 +656,13 @@ async def update_order(record_id: str, update: OrderUpdate):
         updated_order = _record_to_order(result)
         
         # ========== v5 推送逻辑 ==========
-        if update.status and update.status != current_status:
-            await _send_status_notification(current_order, updated_order, update)
+        if new_status and new_status != current_status:
+            # 构建一个简化的update对象用于推送
+            class SimpleUpdate:
+                def __init__(self, data):
+                    for k, v in data.items():
+                        setattr(self, k, v)
+            await _send_status_notification(current_order, updated_order, SimpleUpdate(body))
         
         return updated_order
     except HTTPException:
