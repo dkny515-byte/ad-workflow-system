@@ -181,7 +181,6 @@ def _map_status_from_feishu(status: str) -> str:
     # 如果去掉emoji后为空，尝试直接匹配原始值（包含emoji）
     if not clean:
         # 直接匹配emoji或完整状态值
-        status_lower = status.lower()
         if '待文案' in status:
             return STATUS_PENDING_COPY
         if '文案待确认' in status:
@@ -198,6 +197,24 @@ def _map_status_from_feishu(status: str) -> str:
             return STATUS_DONE
         if '取消' in status:
             return STATUS_CANCELLED
+        
+        # 直接匹配emoji
+        if '🟡' in status:
+            return STATUS_PENDING_COPY  # 待文案/文案待确认
+        if '🔵' in status:
+            return STATUS_PENDING_DESIGN
+        if '🟠' in status:
+            return STATUS_PENDING_REVIEW
+        if '🔴' in status:
+            return STATUS_NEEDS_REVISE
+        if '🟢' in status:
+            return STATUS_PENDING_CLIENT
+        if '✅' in status:
+            return STATUS_DONE
+        if '❌' in status:
+            return STATUS_CANCELLED
+        if '⚪️' in status:
+            return STATUS_NEW
     
     return clean
 
