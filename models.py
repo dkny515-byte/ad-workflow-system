@@ -26,6 +26,7 @@ class OrderUpdate(BaseModel):
     status: Optional[str] = None
     internalStatus: Optional[str] = None
     designer: Optional[str] = None
+    copywriter: Optional[str] = None
     reviewer: Optional[str] = None
     makeDate: Optional[date] = None
     priority: Optional[str] = None
