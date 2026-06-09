@@ -112,6 +112,69 @@ async def table_fields():
             "traceback": traceback.format_exc()
         }
 
+@app.get("/debug-record/{record_id}")
+async def debug_record(record_id: str):
+    """调试单条记录"""
+    try:
+        from feishu_client import feishu
+        from config import settings
+        from routers.orders import _record_to_order
+        
+        record = await feishu.get_record(settings.ORDERS_TABLE_ID, record_id)
+        order = _record_to_order(record)
+        
+        return {
+            "status": "ok",
+            "record_id": record_id,
+            "order": order
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "raw_record": record if 'record' in locals() else None
+        }
+
+@app.get("/debug-all-records")
+async def debug_all_records():
+    """调试所有记录"""
+    try:
+        from feishu_client import feishu
+        from config import settings
+        from routers.orders import _record_to_order
+        
+        records = await feishu.list_records(settings.ORDERS_TABLE_ID)
+        
+        results = []
+        errors = []
+        for r in records:
+            try:
+                order = _record_to_order(r)
+                results.append({"record_id": r.get("record_id"), "status": "ok", "project": order.get("projectName")})
+            except Exception as e:
+                errors.append({
+                    "record_id": r.get("record_id"),
+                    "error": str(e),
+                    "fields": list(r.get("fields", {}).keys())
+                })
+        
+        return {
+            "status": "ok",
+            "total": len(records),
+            "success": len(results),
+            "errors": len(errors),
+            "error_details": errors[:5]  # 只返回前5个错误
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # API路由（必须在静态文件挂载之前）
 app.include_router(orders.router, prefix="/api/orders", tags=["工单"])
 app.include_router(customers.router, prefix="/api/customers", tags=["客户"])
