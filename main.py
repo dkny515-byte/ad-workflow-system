@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -269,6 +269,11 @@ async def test_orders_v2():
             "error": str(e),
             "traceback": traceback.format_exc()
         }
+
+@app.put("/api/test-put/{record_id}")
+async def test_put(record_id: str, request: Request):
+    return {"test": "PUT is working", "record_id": record_id}
+
 app.include_router(orders.router, prefix="/api/orders", tags=["工单"])
 app.include_router(customers.router, prefix="/api/customers", tags=["客户"])
 app.include_router(fonts.router, prefix="/api/fonts", tags=["字体"])
