@@ -499,17 +499,7 @@ async def list_orders(
 @router.get("/{record_id}")
 async def get_order(record_id: str):
     """获取单条工单"""
-    try:
-        record = await feishu.get_record(settings.ORDERS_TABLE_ID, record_id)
-        result = _record_to_order(record)
-        return result
-    except Exception as e:
-        import traceback
-        return {
-            "error": str(e),
-            "traceback": traceback.format_exc(),
-            "record_id": record_id
-        }
+    return {"test": "get_order is working", "record_id": record_id}
 
 @router.post("/", response_model=OrderResponse)
 async def create_order(order: OrderCreate):
