@@ -280,10 +280,48 @@
     <script>
         // ==================== 配置 ====================
         const API_BASE = '/api';
-        const DESIGNERS = ['S', '態', '文官', 'HaHaHa', '23', 'Rinnsozenn', "d4'afraid"];
-        const COPYWRITERS = ['Adi Wu', 'DKNY', 'Bianca', '春春', '婉莹', 'anna'];
-        const ALL_STAFF = [...DESIGNERS, ...COPYWRITERS];
-        const REVIEWERS = ['Adi Wu', 'DKNY', '春春'];
+        
+        // 动态数据（从 orders 中提取，避免硬编码与实际飞书人员不匹配）
+        let DESIGNERS = [];
+        let COPYWRITERS = [];
+        let ALL_STAFF = [];
+        let REVIEWERS = [];
+        let CUSTOMERS_DATA = [];
+        let FONTS_DATA = [];
+        
+        // 从 orders 中提取静态数据
+        function refreshStaticData() {
+            const designersSet = new Set();
+            const copywritersSet = new Set();
+            const reviewersSet = new Set();
+            const customersMap = new Map(); // name -> Set(depts)
+            const fontsSet = new Set();
+            
+            orders.forEach(o => {
+                if (o.designer && o.designer !== '待分配') designersSet.add(o.designer);
+                if (o.copywriter && o.copywriter !== '待分配') copywritersSet.add(o.copywriter);
+                if (o.reviewer && o.reviewer !== '待分配') reviewersSet.add(o.reviewer);
+                if (o.customer) {
+                    if (!customersMap.has(o.customer)) customersMap.set(o.customer, new Set());
+                    if (o.dept) customersMap.get(o.customer).add(o.dept);
+                }
+                if (o.fonts && Array.isArray(o.fonts)) {
+                    o.fonts.forEach(f => { if (f && typeof f === 'string') fontsSet.add(f); });
+                }
+            });
+            
+            DESIGNERS = [...designersSet];
+            COPYWRITERS = [...copywritersSet];
+            REVIEWERS = [...reviewersSet];
+            ALL_STAFF = [...new Set([...DESIGNERS, ...COPYWRITERS, ...REVIEWERS])];
+            
+            CUSTOMERS_DATA = [...customersMap.entries()].map(([name, depts]) => ({
+                name,
+                depts: [...depts]
+            }));
+            
+            FONTS_DATA = [...fontsSet];
+        }
         
         // v5 状态定义
         const STATUS = {
@@ -383,6 +421,7 @@
         async function loadOrders() {
             try {
                 orders = await apiGet('/orders/?active=true');
+                refreshStaticData();
             } catch(e) {
                 showToast('加载数据失败: ' + e.message);
                 orders = [];
