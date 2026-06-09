@@ -270,9 +270,9 @@ async def test_orders_v2():
             "traceback": traceback.format_exc()
         }
 
-@app.get("/api/test-put/{record_id}")
-async def test_put(record_id: str):
-    return {"test": "GET is working", "record_id": record_id}
+@app.get("/health2")
+async def health2():
+    return {"test": "health2 is working"}
 
 app.include_router(orders.router, prefix="/api/orders", tags=["工单"])
 app.include_router(customers.router, prefix="/api/customers", tags=["客户"])
