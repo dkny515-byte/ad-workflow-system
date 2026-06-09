@@ -99,6 +99,8 @@ def _extract_text(value):
             elif isinstance(item, str):
                 texts.append(item)
         return "".join(texts)
+    if isinstance(value, dict):
+        return value.get("text", str(value))
     return str(value)
 
 def _extract_date(value):
