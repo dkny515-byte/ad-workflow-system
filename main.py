@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from routers import orders, customers, fonts, notifications
 import config
+import time
 
 app = FastAPI(title="广告工单系统", version="1.0.0")
 
@@ -15,6 +16,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 版本端点（用于验证部署状态）
+@app.get("/version")
+async def version():
+    return {"version": "1.0.1", "deploy_time": time.time(), "features": ["dynamic_staff", "dynamic_customers", "dynamic_fonts"]}
 
 # 健康检查（必须在静态文件挂载之前）
 @app.get("/health")
