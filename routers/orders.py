@@ -404,11 +404,14 @@ async def list_orders(
             orders = [o for o in orders if o["status"] not in [STATUS_DONE, STATUS_CANCELLED]]
             
         return orders
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         error_detail = f"{str(e)}\n{traceback.format_exc()}"
         print(f"[ERROR] list_orders: {error_detail}")
-        raise HTTPException(status_code=500, detail=str(e) or "后端连接飞书表格失败，请检查环境变量和权限配置")
+        # 返回错误信息而不是抛出异常，方便排查
+        return [{"error": str(e), "traceback": traceback.format_exc()}]
 
 @router.get("/{record_id}", response_model=OrderResponse)
 async def get_order(record_id: str):
