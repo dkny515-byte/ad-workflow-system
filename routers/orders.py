@@ -496,14 +496,23 @@ async def list_orders(
         # 返回错误信息而不是抛出异常，方便排查
         return [{"error": str(e), "traceback": traceback.format_exc()}]
 
-@router.get("/{record_id}", response_model=OrderResponse)
+@router.get("/{record_id}")
 async def get_order(record_id: str):
     """获取单条工单"""
     try:
         record = await feishu.get_record(settings.ORDERS_TABLE_ID, record_id)
-        return _record_to_order(record)
+        # 调试：记录原始返回结构
+        print(f"[DEBUG] get_order raw record: {record}")
+        result = _record_to_order(record)
+        print(f"[DEBUG] get_order converted: {result}")
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_detail = f"{str(e)}\n{traceback.format_exc()}"
+        print(f"[ERROR] get_order: {error_detail}")
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @router.post("/", response_model=OrderResponse)
 async def create_order(order: OrderCreate):
