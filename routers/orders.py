@@ -267,7 +267,7 @@ def _record_to_order(record: dict) -> dict:
             "designer": _extract_user(fields.get("设计师 (人员 )", "")),
             "needCopy": _extract_text(fields.get("需要前策|文案", "否")) == "是",
             "copywriter": _extract_user(fields.get("前策|文案 (人员 )", "")),
-            "status": (lambda s: (_map_status_from_feishu(s), print(f"DEBUG status: raw={repr(fields.get('进度状态'))} extracted={repr(s)} mapped={repr(_map_status_from_feishu(s))}")) or _map_status_from_feishu(s))(_extract_text(fields.get("进度状态", ""))),
+            "status": _map_status_from_feishu(_extract_text(fields.get("进度状态", ""))),
             "version": fields.get("版本号", 1) if isinstance(fields.get("版本号"), (int, float)) else _parse_version(_extract_text(fields.get("版本号", "v1"))),
             "createDate": _extract_date(fields.get("下单日期", "")),
             "ae": _extract_user(fields.get("AE-创建人", "")),
