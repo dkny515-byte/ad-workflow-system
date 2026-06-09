@@ -93,12 +93,29 @@ async def test_record_conversion():
 
 @app.get("/table-fields")
 async def table_fields():
-    """获取订单表格的所有字段名"""
+    """获取订单表格的所有字段名，并测试记录转换"""
     try:
         from feishu_client import feishu
         from config import settings
+        from routers.orders import _record_to_order
         
         fields = await feishu.list_fields(settings.ORDERS_TABLE_ID)
+        
+        # 测试记录转换
+        records = await feishu.list_records(settings.ORDERS_TABLE_ID)
+        test_results = []
+        test_errors = []
+        for r in records[:2]:
+            try:
+                order = _record_to_order(r)
+                test_results.append({"record_id": r.get("record_id"), "status": "ok", "project": order.get("projectName")})
+            except Exception as e:
+                import traceback
+                test_errors.append({
+                    "record_id": r.get("record_id"),
+                    "error": str(e),
+                    "traceback": traceback.format_exc()
+                })
         
         return {
             "status": "ok",
@@ -110,7 +127,15 @@ async def table_fields():
                     "type": f.get("type"),
                 }
                 for f in fields
-            ]
+            ],
+            "record_conversion_test": {
+                "total_records": len(records),
+                "tested": 2,
+                "success": len(test_results),
+                "errors": len(test_errors),
+                "results": test_results,
+                "error_details": test_errors
+            }
         }
     except Exception as e:
         import traceback
